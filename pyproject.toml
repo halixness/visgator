@@ -1,0 +1,34 @@
+[tool.pdm]
+
+[tool.pdm.dev-dependencies]
+lint = ["black>=23.3.0", "ruff>=0.0.263", "mypy>=1.2.0"]
+
+[tool.black]
+line-length = 88
+target-version = ["py311"]
+
+
+[tool.ruff]
+select = ["F", "E", "I", "W"]
+fix = true
+ignore = ["F722"]
+
+
+[project]
+name = "visgator"
+version = "0.1.0"
+description = ""
+authors = [
+    { name = "Francesco Gentile", email = "francesco.gentile@studenti.unitn.it" },
+]
+dependencies = [
+    "torch>=2.0.0",
+    "torchvision>=0.15.1",
+    "transformers>=4.28.1",
+    "ultralytics>=8.0.90",
+    "tqdm>=4.65.0",
+    "jaxtyping>=0.2.15",
+    "torchmetrics>=0.11.4",
+]
+requires-python = ">=3.11"
+license = { text = "MIT" }

@@ -1,0 +1,10 @@
+{
+    "dataset": {
+        "name": "refcocog",
+        "path": "./data/refcocog",
+        "split_provider": "umd"
+    },
+    "model": {
+        "name": "baseline"
+    }
+}
