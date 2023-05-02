@@ -4,6 +4,6 @@
 
 """Module containing metrics."""
 
-from ._jaccard import JaccardIndex
+from ._iou import GIoU, IoU
 
-__all__ = ["JaccardIndex"]
+__all__ = ["IoU", "GIoU"]

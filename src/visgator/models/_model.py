@@ -8,16 +8,16 @@ import abc
 from typing import Generic, TypeVar
 
 from torch import nn
-from visgator.utils import instantiate
 from visgator.utils.batch import Batch
 from visgator.utils.bbox import BBoxes
+from visgator.utils.misc import instantiate
 
 from ._config import Config
 
 _T = TypeVar("_T")
 
 
-class Model(nn.Module, Generic[_T]):
+class Model(nn.Module, Generic[_T], abc.ABC):
     """Model interface."""
 
     def __init__(self, config: Config) -> None:

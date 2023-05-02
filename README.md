@@ -19,5 +19,5 @@ pdm install
 Example command to evaluate a model on the test set:
 
 ```bash
-python -m visgator --phase test --config config/example.json
+python -m visgator --phase eval --config config/example.json
 ```

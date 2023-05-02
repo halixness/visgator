@@ -15,7 +15,8 @@ from .engines.trainer import Trainer
 def get_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str, required=True)
-    parser.add_argument("--phase", type=str, default="train", choices=["train", "test"])
+    parser.add_argument("--phase", type=str, default="train", choices=["train", "eval"])
+    parser.add_argument("--debug", action="store_true")
     return parser
 
 
@@ -32,12 +33,15 @@ def main() -> None:
         case _:
             raise ValueError(f"Unknown config file extention: {extention}")
 
-    if args.phase == "test":
-        config = EvaluatorConfig(cfg)
+    if args.debug:
+        cfg["debug"] = True
+
+    if args.phase == "eval":
+        config = EvaluatorConfig.from_dict(cfg)
         evaluator = Evaluator(config)
         evaluator.run()
     else:
-        config = TrainerConfig(cfg)
+        config = TrainerConfig.from_dict(cfg)
         trainer = Trainer(config)
         trainer.run()
 

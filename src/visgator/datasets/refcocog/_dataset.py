@@ -28,10 +28,14 @@ class Sample:
 class Dataset(BaseDataset):
     """RefCOCOg dataset."""
 
-    def __init__(self, config: Config, split: Split) -> None:
-        super().__init__(config, split)
+    def __init__(self, config: Config, split: Split, debug: bool) -> None:
+        super().__init__(config, split, debug)
 
-        self._samples = self._get_samples(config, split)
+        samples = self._get_samples(config, split)
+        if debug:
+            samples = samples[:100]
+
+        self._samples = samples
 
     def _get_samples(self, config: Config, split: Split) -> list[Sample]:
         refs_path = config.path / f"annotations/refs({config.split_provider}).p"
