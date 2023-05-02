@@ -5,6 +5,7 @@
 import torchvision.transforms as T
 from transformers import CLIPModel, CLIPProcessor
 from ultralytics import YOLO
+
 from visgator.utils.batch import Batch
 from visgator.utils.bbox import BBox, BBoxes
 
@@ -35,7 +36,10 @@ class Model(BaseModel[BBoxes]):
 
             if len(result.boxes) == 0:
                 # create a dummy bbox
-                tmp = BBox.from_tuple((0, 0, 0, 0), sample.image.shape[1:])
+                tmp = BBox.from_tuple(
+                    (0, 0, 0, 0),
+                    sample.image.shape[1:],  # type: ignore
+                )
                 boxes.append(tmp.to(self._clip.device))
                 continue
 
@@ -52,6 +56,11 @@ class Model(BaseModel[BBoxes]):
 
             output = self._clip(**inputs)
             best = output.logits_per_image.argmax(0).item()
-            boxes.append(BBox(result.boxes[best].xyxy[0], sample.image.shape[1:]))
+            boxes.append(
+                BBox(
+                    result.boxes[best].xyxy[0],
+                    sample.image.shape[1:],  # type: ignore
+                )
+            )
 
         return boxes

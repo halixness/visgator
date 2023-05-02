@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 import torchvision
+
 from visgator.utils.batch import BatchSample
 from visgator.utils.bbox import BBox, BBoxFormat
 

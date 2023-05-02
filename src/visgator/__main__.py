@@ -31,18 +31,18 @@ def main() -> None:
             with open(config_path, "r") as f:
                 cfg = json.load(f)
         case _:
-            raise ValueError(f"Unknown config file extention: {extention}")
+            raise ValueError(f"Unknown config file extention: {extention}.")
 
     if args.debug:
         cfg["debug"] = True
 
     if args.phase == "eval":
-        config = EvaluatorConfig.from_dict(cfg)
-        evaluator = Evaluator(config)
+        eval_config = EvaluatorConfig.from_dict(cfg)
+        evaluator = Evaluator(eval_config)
         evaluator.run()
     else:
-        config = TrainerConfig.from_dict(cfg)
-        trainer = Trainer(config)
+        train_config = TrainerConfig.from_dict(cfg)
+        trainer = Trainer(train_config)
         trainer.run()
 
 

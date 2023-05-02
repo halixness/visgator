@@ -4,9 +4,8 @@
 
 from __future__ import annotations
 
+import importlib
 from typing import Any
-
-from visgator.utils.misc import instantiate
 
 
 class Config:
@@ -28,7 +27,7 @@ class Config:
 
         child_module = str(name).lower()
         parent_module = ".".join(Config.__module__.split(".")[:-1])
-        module = f"{parent_module}.{child_module}"
-        class_path = f"{module}.Config"
+        module = importlib.import_module(f"{parent_module}.{child_module}")
+        cls = getattr(module, "Config")
 
-        return instantiate(class_path, Config, cfg)  # type: ignore
+        return cls(cfg)  # type: ignore

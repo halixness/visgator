@@ -25,7 +25,7 @@ def box_iou_pairwise(
     union = area1 + area2 - inter
 
     iou = inter / union
-    return iou, union  # type: ignore
+    return iou, union
 
 
 def generalized_box_iou_pairwise(
@@ -45,4 +45,4 @@ def generalized_box_iou_pairwise(
     wh = (rb - lt).clamp(min=0)  # [N,2]
     area = wh[:, 0] * wh[:, 1]
 
-    return iou - (area - union) / area  # type: ignore
+    return iou - (area - union) / area

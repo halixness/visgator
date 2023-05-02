@@ -5,12 +5,13 @@
 from __future__ import annotations
 
 import abc
+import importlib
 from typing import Generic, TypeVar
 
 from torch import nn
+
 from visgator.utils.batch import Batch
 from visgator.utils.bbox import BBoxes
-from visgator.utils.misc import instantiate
 
 from ._config import Config
 
@@ -46,7 +47,7 @@ class Model(nn.Module, Generic[_T], abc.ABC):
     def from_config(config: Config) -> Model[_T]:
         child_module = config.name.lower()
         parent_module = ".".join(Model.__module__.split(".")[:-1])
-        module = f"{parent_module}.{child_module}"
-        class_path = f"{module}.Model"
+        module = importlib.import_module(f"{parent_module}.{child_module}")
+        cls = getattr(module, "Model")
 
-        return instantiate(class_path, Model, config)  # type: ignore
+        return cls(config)  # type: ignore

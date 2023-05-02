@@ -2,6 +2,9 @@
 
 [tool.pdm.dev-dependencies]
 lint = ["black>=23.3.0", "ruff>=0.0.263", "mypy>=1.2.0"]
+types = [
+    "types-tqdm>=4.65.0.1",
+]
 
 [tool.black]
 line-length = 88

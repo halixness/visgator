@@ -6,6 +6,7 @@ import torch
 from jaxtyping import Float
 from torch import Tensor
 from torchmetrics import Metric
+
 from visgator.utils.bbox import ops
 
 

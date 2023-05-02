@@ -4,11 +4,13 @@
 
 import logging
 from datetime import datetime
+from typing import Any
 
 import torch
 from torch.utils.data import BatchSampler, DataLoader, SequentialSampler
 from torchmetrics import MetricCollection
 from tqdm import tqdm
+
 from visgator.datasets import Dataset, Split
 from visgator.metrics import GIoU, IoU
 from visgator.models import Model
@@ -29,7 +31,7 @@ class Evaluator:
         self._logger: logging.Logger
         self._device: Device
         self._loader: DataLoader[tuple[Batch, BBoxes]]
-        self._model: Model
+        self._model: Model[Any]
         self._metrics: MetricCollection
 
     def _setup_environment(self) -> None:
@@ -60,7 +62,7 @@ class Evaluator:
         batch_sampler = BatchSampler(sampler, batch_size=1, drop_last=False)
 
         self._loader = DataLoader(
-            dataset,
+            dataset,  # type: ignore
             batch_sampler=batch_sampler,
             num_workers=1,
             pin_memory=True,
@@ -74,7 +76,7 @@ class Evaluator:
     def _set_model(self) -> None:
         self._logger.info(f"Using model {self._config.model.name}.")
 
-        model = Model.from_config(self._config.model)
+        model: Model[Any] = Model.from_config(self._config.model)
         model = model.to(self._device.to_torch())
 
         if self._config.weights is None:
@@ -94,7 +96,7 @@ class Evaluator:
 
         if self._config.compile:
             self._logger.info("Compiling model.")
-            self._model = torch.compile(model)
+            self._model = torch.compile(model)  # type: ignore
         else:
             self._logger.info("Skipping model compilation.")
             self._model = model
