@@ -9,6 +9,8 @@ from typing import Any
 
 from .engines.evaluator import Config as EvaluatorConfig
 from .engines.evaluator import Evaluator
+from .engines.trainer import Config as TrainerConfig
+from .engines.trainer import Trainer
 
 
 def get_arg_parser() -> argparse.ArgumentParser:
@@ -40,10 +42,9 @@ def main() -> None:
         evaluator: Evaluator[Any] = Evaluator(eval_config)
         evaluator.run()
     else:
-        raise NotImplementedError
-        # train_config = TrainerConfig.from_dict(cfg)
-        # trainer = Trainer(train_config)
-        # trainer.run()
+        train_config = TrainerConfig.from_dict(cfg)
+        trainer: Trainer[Any] = Trainer(train_config)
+        trainer.run()
 
 
 if __name__ == "__main__":
