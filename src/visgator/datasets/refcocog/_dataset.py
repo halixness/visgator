@@ -53,8 +53,15 @@ class Dataset(BaseDataset):
             images[image["id"]] = images_path / image["file_name"]
 
         for ref in refs:
-            if ref["split"] != str(split):
-                continue
+            match (ref["split"], split):
+                case ("train", Split.TRAIN):
+                    pass
+                case ("val", Split.VALIDATION):
+                    pass
+                case ("test", Split.TEST):
+                    pass
+                case (_, _):
+                    continue
 
             sentences = [sent["raw"] for sent in ref["sentences"]]
             if info.get(ref["ann_id"]) is not None:

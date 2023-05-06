@@ -2,6 +2,7 @@
 ##
 ##
 
+import torch
 from jaxtyping import Float
 from torch import Tensor
 
@@ -9,13 +10,15 @@ from torch import Tensor
 def xywh_to_xyxy(xywh: Float[Tensor, "4"]) -> Float[Tensor, "4"]:
     """Convert [x, y, w, h] box format to [x1, y1, x2, y2] format."""
     x, y, w, h = xywh.unbind(-1)
-    return xywh.new_tensor([x, y, x + w, y + h])
+    xyxy = [x, y, x + w, y + h]
+    return torch.stack(xyxy, dim=-1)
 
 
 def cxcywh_to_xyxy(cxcywh: Float[Tensor, "4"]) -> Float[Tensor, "4"]:
     """Convert [cx, cy, w, h] box format to [x1, y1, x2, y2] format."""
     cx, cy, w, h = cxcywh.unbind(-1)
-    return cxcywh.new_tensor([cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2])
+    xyxy = [cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2]
+    return torch.stack(xyxy, dim=-1)
 
 
 def xyxyn_to_xyxy(
