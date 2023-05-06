@@ -4,11 +4,12 @@
 
 import logging
 from datetime import datetime
-from typing import Any
+from timeit import default_timer as timer
+from typing import Generic, TypeVar
 
 import torch
+import torchmetrics as tm
 from torch.utils.data import BatchSampler, DataLoader, SequentialSampler
-from torchmetrics import MetricCollection
 from tqdm import tqdm
 
 from visgator.datasets import Dataset, Split
@@ -22,8 +23,10 @@ from visgator.utils.misc import init_torch
 
 from ._config import Config
 
+_T = TypeVar("_T")
 
-class Evaluator:
+
+class Evaluator(Generic[_T]):
     def __init__(self, config: Config) -> None:
         self._config = config
 
@@ -31,8 +34,8 @@ class Evaluator:
         self._logger: logging.Logger
         self._device: Device
         self._loader: DataLoader[tuple[Batch, BBoxes]]
-        self._model: Model[Any]
-        self._metrics: MetricCollection
+        self._model: Model[_T]
+        self._metrics: tm.MetricCollection
 
     def _setup_environment(self) -> None:
         init_torch(self._config.seed, self._config.debug)
@@ -76,7 +79,7 @@ class Evaluator:
     def _set_model(self) -> None:
         self._logger.info(f"Using model {self._config.model.name}.")
 
-        model: Model[Any] = Model.from_config(self._config.model)
+        model: Model[_T] = Model.from_config(self._config.model)
         model = model.to(self._device.to_torch())
 
         if self._config.weights is None:
@@ -102,23 +105,18 @@ class Evaluator:
             self._model = model
 
     def _set_metrics(self) -> None:
-        self._metrics = MetricCollection(
+        self._metrics = tm.MetricCollection(
             {
                 "IoU": IoU(),
                 "GIoU": GIoU(),
-            }
+            },
         ).to(self._device.to_torch())
-
-    def _log_metrics(self) -> None:
-        metrics = self._metrics.compute()
-
-        self._logger.info("Metrics:")
-        for name, value in metrics.items():
-            self._logger.info(f"\t{name}: {value}")
 
     @torch.no_grad()
     def _eval(self) -> None:
         self._logger.info("Evaluation started.")
+
+        start = timer()
 
         self._model.eval()
 
@@ -133,8 +131,18 @@ class Evaluator:
 
             self._metrics.update(predictions.xyxyn, bboxes.xyxyn)
 
-        self._log_metrics()
+        end = timer()
+        elapsed = end - start
+
         self._logger.info("Evaluation finished.")
+        self._logger.info("Statistics:")
+        self._logger.info(f"\telapsed time: {elapsed:.2f}s")
+        self._logger.info(f"\ttime per image: {elapsed / len(self._loader):.2f}s")
+
+        metrics = self._metrics.compute()
+        self._logger.info("\tmetrics:")
+        for name, value in metrics.items():
+            self._logger.info(f"\t\t{name}: {value:.4f}")
 
     def run(self) -> None:
         try:

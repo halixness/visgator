@@ -5,11 +5,10 @@
 import argparse
 import json
 from pathlib import Path
+from typing import Any
 
 from .engines.evaluator import Config as EvaluatorConfig
 from .engines.evaluator import Evaluator
-from .engines.trainer import Config as TrainerConfig
-from .engines.trainer import Trainer
 
 
 def get_arg_parser() -> argparse.ArgumentParser:
@@ -38,12 +37,13 @@ def main() -> None:
 
     if args.phase == "eval":
         eval_config = EvaluatorConfig.from_dict(cfg)
-        evaluator = Evaluator(eval_config)
+        evaluator: Evaluator[Any] = Evaluator(eval_config)
         evaluator.run()
     else:
-        train_config = TrainerConfig.from_dict(cfg)
-        trainer = Trainer(train_config)
-        trainer.run()
+        raise NotImplementedError
+        # train_config = TrainerConfig.from_dict(cfg)
+        # trainer = Trainer(train_config)
+        # trainer.run()
 
 
 if __name__ == "__main__":
