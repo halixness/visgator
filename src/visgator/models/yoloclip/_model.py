@@ -2,6 +2,8 @@
 ##
 ##
 
+from typing import Optional
+
 import torchvision.transforms as T
 from transformers import CLIPModel, CLIPProcessor
 from ultralytics import YOLO
@@ -9,6 +11,7 @@ from ultralytics import YOLO
 from visgator.utils.batch import Batch
 from visgator.utils.bbox import BBox, BBoxes
 
+from .._criterion import Criterion
 from .._model import Model as BaseModel
 from ._config import Config
 
@@ -22,6 +25,10 @@ class Model(BaseModel[BBoxes]):
         self._clip = CLIPModel.from_pretrained(config.clip.weights())
 
         self._toPIL = T.ToPILImage()
+
+    @property
+    def criterion(self) -> Optional[Criterion[BBoxes]]:
+        return None
 
     def predict(self, output: BBoxes) -> BBoxes:
         return output
