@@ -3,9 +3,10 @@
 ##
 
 import enum
-from typing import Optional, Self
+from typing import Optional
 
 import torch
+from typing_extensions import Self
 
 
 class DeviceType(enum.Enum):

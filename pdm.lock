@@ -12,6 +12,7 @@ dependencies = [
     "packaging>=22.0",
     "pathspec>=0.9.0",
     "platformdirs>=2",
+    "tomli>=1.1.0; python_version < \"3.11\"",
 ]
 
 [[package]]
@@ -183,6 +184,7 @@ requires_python = ">=3.7"
 summary = "Optional static typing for Python"
 dependencies = [
     "mypy-extensions>=1.0.0",
+    "tomli>=1.1.0; python_version < \"3.11\"",
     "typing-extensions>=3.10",
 ]
 
@@ -494,6 +496,12 @@ version = "0.13.3"
 summary = "Fast and Customizable Tokenizers"
 
 [[package]]
+name = "tomli"
+version = "2.0.1"
+requires_python = ">=3.7"
+summary = "A lil' TOML parser"
+
+[[package]]
 name = "torch"
 version = "2.0.0"
 requires_python = ">=3.8.0"
@@ -583,6 +591,9 @@ name = "typeguard"
 version = "3.0.2"
 requires_python = ">=3.7.4"
 summary = "Run-time type checker for Python"
+dependencies = [
+    "typing-extensions>=4.4.0; python_version < \"3.11\"",
+]
 
 [[package]]
 name = "types-tqdm"
@@ -648,8 +659,9 @@ summary = "A built-package format for Python"
 
 [metadata]
 lock_version = "4.2"
+cross_platform = true
 groups = ["default", "lint", "types"]
-content_hash = "sha256:aaec8989f9a160550fc8a5fbb878a3a7a3855feb2a9220147cb55f471daa3ea7"
+content_hash = "sha256:843dbd22a5a918046e5391ebcec216420cd2721c68e6be423e71d9d358198a0c"
 
 [metadata.files]
 "black 23.3.0" = [
@@ -1537,6 +1549,10 @@ content_hash = "sha256:aaec8989f9a160550fc8a5fbb878a3a7a3855feb2a9220147cb55f471
     {url = "https://files.pythonhosted.org/packages/ea/08/fa8ed4b189e184f855cda96e0076d56200b675c2f68c34b674a710985dcf/tokenizers-0.13.3-cp39-cp39-macosx_12_0_arm64.whl", hash = "sha256:a23ff602d0797cea1d0506ce69b27523b07e70f6dda982ab8cf82402de839088"},
     {url = "https://files.pythonhosted.org/packages/ee/14/c9d4f033e5cea6ab19a10dc3b0548939b1a55bcc317a755deb3b802d3e24/tokenizers-0.13.3-cp310-cp310-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:5ef4215284df1277dadbcc5e17d4882bda19f770d02348e73523f7e7d8b8d396"},
     {url = "https://files.pythonhosted.org/packages/f6/6c/7bf80d4a39832ba612cbe8dd9a579e3f78843848afd6b432062ab9133cd7/tokenizers-0.13.3-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:c5fd1a6a25353e9aa762e2aae5a1e63883cad9f4e997c447ec39d071020459bc"},
+]
+"tomli 2.0.1" = [
+    {url = "https://files.pythonhosted.org/packages/97/75/10a9ebee3fd790d20926a90a2547f0bf78f371b2f13aa822c759680ca7b9/tomli-2.0.1-py3-none-any.whl", hash = "sha256:939de3e7a6161af0c887ef91b7d41a53e7c5a1ca976325f429cb46ea9bc30ecc"},
+    {url = "https://files.pythonhosted.org/packages/c0/3f/d7af728f075fb08564c5949a9c95e44352e23dee646869fa104a3b2060a3/tomli-2.0.1.tar.gz", hash = "sha256:de526c12914f0c550d15924c62d72abc48d6fe7364aa87328337a31007fe8a4f"},
 ]
 "torch 2.0.0" = [
     {url = "https://files.pythonhosted.org/packages/21/7a/f43f2f490836dfc2de466dbc86cd75357d9ae3945c084efa290fad15976f/torch-2.0.0-1-cp311-cp311-manylinux2014_aarch64.whl", hash = "sha256:bd42db2a48a20574d2c33489e120e9f32789c4dc13c514b0c44272972d14a2d7"},

@@ -1,15 +1,8 @@
 [tool.pdm]
 
 [tool.pdm.dev-dependencies]
-lint = [
-    "black>=23.3.0",
-    "ruff>=0.0.263",
-    "mypy>=1.2.0",
-    "pre-commit>=3.3.1",
-]
-types = [
-    "types-tqdm>=4.65.0.1",
-]
+lint = ["black>=23.3.0", "ruff>=0.0.263", "mypy>=1.2.0", "pre-commit>=3.3.1"]
+types = ["types-tqdm>=4.65.0.1"]
 
 [tool.black]
 line-length = 88
@@ -28,6 +21,7 @@ version = "0.1.0"
 description = ""
 authors = [
     { name = "Francesco Gentile", email = "francesco.gentile@studenti.unitn.it" },
+    { name = "Diego Calanzone", email = "diego.calanzone@studenti.unitn.it" },
 ]
 dependencies = [
     "torch>=2.0.0",
@@ -38,5 +32,5 @@ dependencies = [
     "jaxtyping>=0.2.15",
     "torchmetrics>=0.11.4",
 ]
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 license = { text = "MIT" }

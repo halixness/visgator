@@ -3,7 +3,9 @@
 ##
 
 from pathlib import Path
-from typing import Any, Optional, Self
+from typing import Any, Optional
+
+from typing_extensions import Self
 
 from visgator.datasets import Config as DatasetConfig
 from visgator.models import Config as ModelConfig

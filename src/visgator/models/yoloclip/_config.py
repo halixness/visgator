@@ -5,7 +5,9 @@
 from __future__ import annotations
 
 import enum
-from typing import Any, Self
+from typing import Any
+
+from typing_extensions import Self
 
 from .._config import Config as BaseConfig
 

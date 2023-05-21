@@ -6,7 +6,9 @@
 
 import enum
 from pathlib import Path
-from typing import Any, Self
+from typing import Any
+
+from typing_extensions import Self
 
 from .._config import Config as BaseConfig
 

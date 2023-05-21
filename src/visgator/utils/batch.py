@@ -4,11 +4,12 @@
 
 import typing
 from dataclasses import dataclass
-from typing import Iterator, Self
+from typing import Iterator
 
 import torch
 from jaxtyping import Float
 from torch import Tensor
+from typing_extensions import Self
 
 
 @dataclass(frozen=True)

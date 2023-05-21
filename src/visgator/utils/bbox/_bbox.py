@@ -4,11 +4,12 @@
 
 import enum
 import typing
-from typing import Iterator, Optional, Self
+from typing import Iterator, Optional
 
 import torch
 from jaxtyping import Float
 from torch import Tensor
+from typing_extensions import Self
 
 from . import _utils as utils
 

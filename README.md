@@ -4,7 +4,7 @@
 
 ### Installation
 
-Requires Python 3.11 (or higher) and [pdm](https://github.com/pdm-project/pdm).
+Requires Python 3.10 (or higher) and [pdm](https://github.com/pdm-project/pdm).
 
 ```bash
 git clone https://github.com/FrancescoGentile/visgator.git

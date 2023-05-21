@@ -4,9 +4,10 @@
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Self
+from typing import Any
 
 import torch
+from typing_extensions import Self
 
 
 @dataclass(frozen=True)
