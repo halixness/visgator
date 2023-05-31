@@ -5,17 +5,16 @@
 from typing import Any
 
 import torch
+from typing_extensions import Self
 
 from visgator.engines.trainer.optimizers import Optimizer
 
-from .._lr_scheduler import LRScheduler as BaseLRScheduler
+from .._lr_scheduler import LRScheduler as _LRSchduler
 from ._config import Config
 
 
-class LRScheduler(BaseLRScheduler):
+class LRScheduler(_LRSchduler):
     def __init__(self, config: Config, optimizer: Optimizer) -> None:
-        super().__init__(config, optimizer)
-
         cls = getattr(torch.optim.lr_scheduler, config.name)
         self._scheduler: torch.optim.lr_scheduler.LRScheduler = cls(
             optimizer, **config.args
@@ -25,6 +24,10 @@ class LRScheduler(BaseLRScheduler):
             self._step_after_batch = True
         else:
             self._step_after_batch = False
+
+    @classmethod
+    def from_config(cls, config: Config, optimizer: Optimizer) -> Self:  # type: ignore
+        return super().from_config(config, optimizer)
 
     def step_after_epoch(self) -> None:
         if not self._step_after_batch:

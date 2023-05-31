@@ -7,6 +7,8 @@ import json
 from pathlib import Path
 from typing import Any
 
+from .datasets import Config as DatasetConfig
+from .datasets import Generator
 from .engines.evaluator import Config as EvaluatorConfig
 from .engines.evaluator import Evaluator
 from .engines.trainer import Config as TrainerConfig
@@ -16,7 +18,9 @@ from .engines.trainer import Trainer
 def get_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str, required=True)
-    parser.add_argument("--phase", type=str, default="train", choices=["train", "eval"])
+    parser.add_argument(
+        "--phase", type=str, default="train", choices=["train", "eval", "generate"]
+    )
     parser.add_argument("--debug", action="store_true")
     return parser
 
@@ -37,14 +41,21 @@ def main() -> None:
     if args.debug:
         cfg["debug"] = True
 
-    if args.phase == "eval":
-        eval_config = EvaluatorConfig.from_dict(cfg)
-        evaluator: Evaluator[Any] = Evaluator(eval_config)
-        evaluator.run()
-    else:
-        train_config = TrainerConfig.from_dict(cfg)
-        trainer: Trainer[Any] = Trainer(train_config)
-        trainer.run()
+    match args.phase:
+        case "train":
+            train_config = TrainerConfig.from_dict(cfg)
+            trainer: Trainer[Any] = Trainer(train_config)
+            trainer.run()
+        case "eval":
+            eval_config = EvaluatorConfig.from_dict(cfg)
+            evaluator: Evaluator[Any] = Evaluator(eval_config)
+            evaluator.run()
+        case "generate":
+            dataset_config = DatasetConfig.from_dict(cfg["dataset"])
+            generator = Generator.from_config(dataset_config)
+            generator.generate()
+        case _:
+            raise ValueError(f"Unknown phase: {args.phase}.")
 
 
 if __name__ == "__main__":

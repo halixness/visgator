@@ -2,22 +2,23 @@
 ##
 ##
 
+from dataclasses import dataclass, field
 from typing import Any
 
-from .._config import Config as BaseConfig
-from .._config import Provider
+import serde
+from typing_extensions import Self
+
+from .._config import Config as _Config
 
 
-class Config(BaseConfig):
-    def __init__(self, cfg: dict[str, Any]) -> None:
-        super().__init__(cfg)
+@serde.serde(type_check=serde.Strict)
+@dataclass(frozen=True)
+class Config(_Config):
+    """Configuration for PyTorch lr schedulers."""
 
-        self._args = dict(cfg.get("args", {}))
+    name: str
+    args: dict[str, Any] = field(default_factory=dict)
 
-    @property
-    def args(self) -> dict[str, Any]:
-        return self._args
-
-    @property
-    def provider(self) -> Provider:
-        return Provider.TORCH
+    @classmethod
+    def from_dict(cls, cfg: dict[str, Any]) -> Self:
+        return serde.from_dict(cls, cfg)

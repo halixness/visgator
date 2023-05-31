@@ -5,36 +5,21 @@
 from __future__ import annotations
 
 import abc
-import enum
-import importlib
 from typing import Any
 
 import torch
+from typing_extensions import Self
 
-
-class Provider(enum.Enum):
-    TORCH = enum.auto()
-    CUSTOM = enum.auto()
+from visgator.utils.factory import get_subclass
 
 
 class Config(abc.ABC):
-    def __init__(self, cfg: dict[str, Any]) -> None:
-        name = cfg.get("name", None)
-        if name is None:
-            raise ValueError("Missing 'name' field in lr_scheduler configuration.")
-        else:
-            self._name = str(name)
-
     @property
     def name(self) -> str:
-        return self._name
+        return self.__module__.split(".")[-2]
 
-    @abc.abstractproperty
-    def provider(self) -> Provider:
-        ...
-
-    @staticmethod
-    def from_dict(cfg: dict[str, Any]) -> Config:
+    @classmethod
+    def from_dict(cls, cfg: dict[str, Any]) -> Self:
         name = cfg.get("name", None)
         if name is None:
             raise ValueError("Missing 'name' field in lr_scheduler configuration.")
@@ -43,10 +28,7 @@ class Config(abc.ABC):
         if getattr(torch.optim.lr_scheduler, name, None) is not None:
             child_module = "torch"
         else:
-            child_module = name.lower()
+            child_module = name
 
-        parent_module = ".".join(Config.__module__.split(".")[:-1])
-        module = importlib.import_module(f"{parent_module}.{child_module}")
-        cls = getattr(module, "Config")
-
-        return cls(cfg)  # type: ignore
+        sub_cls = get_subclass(cls, child_module)
+        return sub_cls.from_dict(cfg)

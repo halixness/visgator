@@ -5,12 +5,14 @@
 """Configurations for RefCOCO dataset."""
 
 import enum
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+import serde
 from typing_extensions import Self
 
-from .._config import Config as BaseConfig
+from .._config import Config as _Config
 
 
 class SplitProvider(enum.Enum):
@@ -25,25 +27,14 @@ class SplitProvider(enum.Enum):
         return self.value
 
 
-class Config(BaseConfig):
+@serde.serde(type_check=serde.Strict)
+@dataclass(frozen=True)
+class Config(_Config):
     """Configuration for RefCOCOg dataset."""
 
-    def __init__(self, cfg: dict[str, Any]) -> None:
-        super().__init__(cfg)
+    path: Path
+    split_provider: SplitProvider
 
-        path = cfg.get("path", None)
-        if path is None:
-            raise ValueError("Missing 'path' field in RefCOCO config.")
-        self._path = Path(path)
-
-        self._split_provider = SplitProvider.from_str(cfg.get("split_provider", "umd"))
-
-    @property
-    def path(self) -> Path:
-        """Returns the path to the dataset."""
-        return self._path
-
-    @property
-    def split_provider(self) -> SplitProvider:
-        """Returns the split provider."""
-        return self._split_provider
+    @classmethod
+    def from_dict(cls, cfg: dict[str, Any]) -> Self:
+        return serde.from_dict(cls, cfg)

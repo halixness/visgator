@@ -6,10 +6,11 @@ from typing import Optional
 
 import torchvision.transforms as T
 from transformers import CLIPModel, CLIPProcessor
+from typing_extensions import Self
 from ultralytics import YOLO
 
-from visgator.utils.batch import Batch
-from visgator.utils.bbox import BBox, BBoxes
+from visgator.utils.batch import Batch, BatchSample
+from visgator.utils.bbox import BBox, BBoxes, BBoxFormat
 
 from .._criterion import Criterion
 from .._model import Model as BaseModel
@@ -26,6 +27,10 @@ class Model(BaseModel[BBoxes]):
 
         self._toPIL = T.ToPILImage()
 
+    @classmethod
+    def from_config(cls, config: Config) -> Self:  # type: ignore
+        return cls(config)
+
     @property
     def criterion(self) -> Optional[Criterion[BBoxes]]:
         return None
@@ -34,19 +39,18 @@ class Model(BaseModel[BBoxes]):
         return output
 
     def forward(self, batch: Batch) -> BBoxes:
-        boxes = BBoxes()
+        boxes = []
 
         images = [self._toPIL(sample.image) for sample in batch.samples]
         yolo_results = self._yolo.predict(images, conf=0.5, verbose=False)
+
+        sample: BatchSample
         for sample, result in zip(batch, yolo_results):
             proposals = []
 
             if len(result.boxes) == 0:
                 # create a dummy bbox
-                tmp = BBox.from_tuple(
-                    (0, 0, 0, 0),
-                    sample.image.shape[1:],  # type: ignore
-                )
+                tmp = BBox((0, 0, 0, 0), sample.image.shape[1:], BBoxFormat.XYXY, True)
                 boxes.append(tmp.to(self._clip.device))
                 continue
 
@@ -56,7 +60,7 @@ class Model(BaseModel[BBoxes]):
                 proposals.append(clipped_image)
 
             inputs = self._clip_processor(
-                text=sample.sentence,
+                text=sample.caption.sentence,
                 images=proposals,
                 return_tensors="pt",
             ).to(self._clip.device)
@@ -66,8 +70,10 @@ class Model(BaseModel[BBoxes]):
             boxes.append(
                 BBox(
                     result.boxes[best].xyxy[0],
-                    sample.image.shape[1:],  # type: ignore
+                    sample.image.shape[1:],
+                    BBoxFormat.XYXY,
+                    False,
                 )
             )
 
-        return boxes
+        return BBoxes.from_bboxes(boxes)

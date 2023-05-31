@@ -4,26 +4,53 @@
 
 import typing
 from dataclasses import dataclass
-from typing import Iterator
+from typing import Any, Iterator, Optional
 
+import serde
 import torch
-from jaxtyping import Float
+from jaxtyping import UInt8
 from torch import Tensor
 from typing_extensions import Self
+
+from .graph import SceneGraph
+
+
+@serde.serde(type_check=serde.Strict)
+@dataclass(frozen=True)
+class Caption:
+    """A caption with an optional scene graph."""
+
+    sentence: str
+    graph: Optional[SceneGraph] = serde.field(
+        default=None,
+        serializer=SceneGraph.from_dict,
+        deserializer=SceneGraph.to_dict,
+    )
+
+    def to_dict(self) -> dict[str, Any]:
+        return serde.to_dict(self)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> Self:
+        return serde.from_dict(cls, data)
 
 
 @dataclass(frozen=True)
 class BatchSample:
-    image: Float[Tensor, "3 H W"]
-    sentence: str
+    """A batch sample with an image and a caption."""
+
+    image: UInt8[Tensor, "3 H W"]
+    caption: Caption
 
     def to(self, device: torch.device) -> Self:
         """Moves the sample to the given device."""
-        return self.__class__(self.image.to(device), self.sentence)
+        return self.__class__(self.image.to(device), self.caption)
 
 
 @dataclass(frozen=True)
 class Batch:
+    """A batch of samples."""
+
     samples: tuple[BatchSample, ...]
 
     def to(self, device: torch.device) -> Self:

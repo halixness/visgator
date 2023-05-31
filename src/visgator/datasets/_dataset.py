@@ -2,14 +2,14 @@
 ##
 ##
 
-from __future__ import annotations
-
 import abc
 import enum
-import importlib
+
+from typing_extensions import Self
 
 from visgator.utils.batch import Batch, BatchSample
 from visgator.utils.bbox import BBox, BBoxes
+from visgator.utils.factory import get_subclass
 
 from ._config import Config
 
@@ -19,22 +19,19 @@ class Split(enum.Enum):
     VALIDATION = "validation"
     TEST = "test"
 
+    @classmethod
+    def from_str(cls, value: str) -> Self:
+        return cls[value.upper().strip()]
+
     def __str__(self) -> str:
         return self.value
 
 
 class Dataset(abc.ABC):
-    def __init__(self, config: Config, split: Split, debug: bool) -> None:
-        super().__init__()
-
-    @staticmethod
-    def from_config(config: Config, split: Split, debug: bool = False) -> Dataset:
-        child_module = config.name.lower()
-        parent_module = ".".join(Dataset.__module__.split(".")[:-1])
-        module = importlib.import_module(f"{parent_module}.{child_module}")
-        cls = getattr(module, "Dataset")
-
-        return cls(config, split, debug)  # type: ignore
+    @classmethod
+    def from_config(cls, config: Config, split: Split, debug: bool = False) -> Self:
+        sub_cls = get_subclass(cls, config.name)
+        return sub_cls.from_config(config, split, debug)
 
     @abc.abstractmethod
     def __getitem__(self, index: int) -> tuple[BatchSample, BBox]:
@@ -48,4 +45,4 @@ class Dataset(abc.ABC):
     def batchify(batch: list[tuple[BatchSample, BBox]]) -> tuple[Batch, BBoxes]:
         samples = tuple(sample for sample, _ in batch)
         bboxes = [bbox for _, bbox in batch]
-        return Batch(samples), BBoxes(bboxes)
+        return Batch(samples), BBoxes.from_bboxes(bboxes)

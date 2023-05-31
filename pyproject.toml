@@ -2,7 +2,10 @@
 
 [tool.pdm.dev-dependencies]
 lint = ["black>=23.3.0", "ruff>=0.0.263", "mypy>=1.2.0", "pre-commit>=3.3.1"]
-types = ["types-tqdm>=4.65.0.1"]
+types = [
+    "types-tqdm>=4.65.0.1",
+    "types-requests>=2.31.0.0",
+]
 
 [tool.black]
 line-length = 88
@@ -31,6 +34,11 @@ dependencies = [
     "tqdm>=4.65.0",
     "jaxtyping>=0.2.15",
     "torchmetrics>=0.11.4",
+    "open-clip-torch>=2.20.0",
+    "pyserde>=0.10.6",
+    "openai>=0.27.7",
+    "SceneGraphParser>=0.1.0",
+    "rustworkx>=0.12.1",
 ]
 requires-python = ">=3.10"
 license = { text = "MIT" }

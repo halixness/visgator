@@ -5,17 +5,21 @@
 from __future__ import annotations
 
 import abc
-import importlib
 from typing import Any
 
-from visgator.engines.trainer.optimizers import Optimizer
+from typing_extensions import Self
 
-from ._config import Config, Provider
+from visgator.engines.trainer.optimizers import Optimizer
+from visgator.utils.factory import get_subclass
+
+from ._config import Config
 
 
 class LRScheduler(abc.ABC):
-    def __init__(self, config: Config, optimizer: Optimizer) -> None:
-        ...
+    @classmethod
+    def from_config(cls, config: Config, optimizer: Optimizer) -> Self:
+        sub_cls = get_subclass(cls, config.name)
+        return sub_cls.from_config(config, optimizer)
 
     @abc.abstractmethod
     def step_after_epoch(self) -> None:
@@ -39,19 +43,3 @@ class LRScheduler(abc.ABC):
     @abc.abstractmethod
     def load_state_dict(self, state_dict: dict[str, Any]) -> None:
         ...
-
-    @staticmethod
-    def from_config(config: Config, optimizer: Optimizer) -> LRScheduler:
-        match config.provider:
-            case Provider.TORCH:
-                child_module = "torch"
-            case Provider.CUSTOM:
-                child_module = config.name.lower()
-            case _:
-                raise ValueError(f"Unknown provider: {config.provider}.")
-
-        parent_module = ".".join(LRScheduler.__module__.split(".")[:-1])
-        module = importlib.import_module(f"{parent_module}.{child_module}")
-        cls = getattr(module, "LRScheduler")
-
-        return cls(config, optimizer)  # type: ignore

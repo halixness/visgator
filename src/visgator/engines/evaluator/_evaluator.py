@@ -11,6 +11,7 @@ import torch
 import torchmetrics as tm
 from torch.utils.data import BatchSampler, DataLoader, SequentialSampler
 from tqdm import tqdm
+from typing_extensions import Self
 
 from visgator.datasets import Dataset, Split
 from visgator.metrics import GIoU, IoU
@@ -36,6 +37,10 @@ class Evaluator(Generic[_T]):
         self._loader: DataLoader[tuple[Batch, BBoxes]]
         self._model: Model[_T]
         self._metrics: tm.MetricCollection
+
+    @classmethod
+    def from_config(cls, config: Config) -> Self:
+        return cls(config)
 
     def _setup_environment(self) -> None:
         init_torch(self._config.seed, self._config.debug)
@@ -129,7 +134,10 @@ class Evaluator(Generic[_T]):
             output = self._model(batch)
             predictions = self._model.predict(output)
 
-            self._metrics.update(predictions.xyxyn, bboxes.xyxyn)
+            self._metrics.update(
+                predictions.to_xyxy().normalize().tensor,
+                bboxes.to_xyxy().normalize().tensor,
+            )
 
         end = timer()
         elapsed = end - start

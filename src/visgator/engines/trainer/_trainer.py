@@ -15,6 +15,7 @@ from torch.cuda.amp import GradScaler  # type: ignore
 from torch.utils import data
 from torch.utils.data import DataLoader
 from tqdm import tqdm
+from typing_extensions import Self
 
 from visgator.datasets import Dataset, Split
 from visgator.metrics import GIoU, IoU, LossTracker
@@ -53,6 +54,10 @@ class Trainer(Generic[_T]):
         self._el_tracker: LossTracker
         self._tm_tracker: tm.MetricTracker
         self._em_tracker: tm.MetricTracker
+
+    @classmethod
+    def from_config(cls, config: Config) -> Self:
+        return cls(config)
 
     def _setup_environment(self) -> None:
         init_torch(self._config.seed, self._config.debug)
@@ -317,45 +322,51 @@ class Trainer(Generic[_T]):
             total=num_batches * self._config.batch_size,
         )
 
-        batch: Batch
-        bboxes: BBoxes
-        for idx, (batch, bboxes) in enumerate(self._train_loader):
-            # this is done since the batch size of the dataloader is equal to
-            # batch_size / gradient_accumulation_steps
-            # thus the samples belonging to the last non complete batch
-            # will not be used for training, so we stop earlier
-            if counter.total == counter.n:
-                break
+        with counter as progress_bar:
+            batch: Batch
+            bboxes: BBoxes
+            for idx, (batch, bboxes) in enumerate(self._train_loader):
+                # this is done since the batch size of the dataloader is equal to
+                # batch_size / gradient_accumulation_steps
+                # thus the samples belonging to the last non complete batch
+                # will not be used for training, so we stop earlier
+                if progress_bar.total == progress_bar.n:
+                    break
 
-            batch = batch.to(self._device.to_torch())
-            bboxes = bboxes.to(self._device.to_torch())
+                batch = batch.to(self._device.to_torch())
+                bboxes = bboxes.to(self._device.to_torch())
 
-            device_type = "cuda" if self._device.is_cuda else "cpu"
-            with autocast(device_type, enabled=self._config.mixed_precision):
-                outputs = self._model(batch)
-                tmp_losses = self._criterion(outputs, bboxes)
-                losses = self._tl_tracker(tmp_losses)
-                loss = losses["total_loss"] / self._config.gradient_accumulation_steps
-
-            self._scaler.scale(loss).backward()
-
-            if (idx + 1) % self._config.gradient_accumulation_steps == 0:
-                if self._config.max_grad_norm is not None:
-                    self._scaler.unscale_(self._optimizer)
-                    torch.nn.utils.clip_grad_norm_(  # type: ignore
-                        self._model.parameters(), self._config.max_grad_norm
+                device_type = "cuda" if self._device.is_cuda else "cpu"
+                with autocast(device_type, enabled=self._config.mixed_precision):
+                    outputs = self._model(batch)
+                    tmp_losses = self._criterion(outputs, bboxes)
+                    losses = self._tl_tracker(tmp_losses)
+                    loss = (
+                        losses["total_loss"] / self._config.gradient_accumulation_steps
                     )
 
-                self._scaler.step(self._optimizer)
-                self._scaler.update()
-                self._optimizer.zero_grad()
-                self._lr_scheduler.step_after_batch()
+                self._scaler.scale(loss).backward()
 
-            with torch.no_grad():
-                pred_bboxes = self._model.predict(outputs)
-                self._tm_tracker.update(pred_bboxes.xyxyn, bboxes.xyxyn)
+                if (idx + 1) % self._config.gradient_accumulation_steps == 0:
+                    if self._config.max_grad_norm is not None:
+                        self._scaler.unscale_(self._optimizer)
+                        torch.nn.utils.clip_grad_norm_(  # type: ignore
+                            self._model.parameters(), self._config.max_grad_norm
+                        )
 
-            counter.update(len(batch))
+                    self._scaler.step(self._optimizer)
+                    self._scaler.update()
+                    self._optimizer.zero_grad()
+                    self._lr_scheduler.step_after_batch()
+
+                with torch.no_grad():
+                    pred_bboxes = self._model.predict(outputs)
+                    self._tm_tracker.update(
+                        pred_bboxes.to_xyxy().normalize().tensor,
+                        bboxes.to_xyxy().normalize().tensor,
+                    )
+
+                progress_bar.update(len(batch))
 
         self._lr_scheduler.step_after_epoch()
 
@@ -388,7 +399,10 @@ class Trainer(Generic[_T]):
                 self._el_tracker.update(tmp_losses)
 
             pred_bboxes = self._model.predict(outputs)
-            self._em_tracker.update(pred_bboxes.xyxyn, bboxes.xyxyn)
+            self._em_tracker.update(
+                pred_bboxes.to_xyxy().normalize().tensor,
+                bboxes.to_xyxy().normalize().tensor,
+            )
 
         end = timer()
         elapsed = end - start

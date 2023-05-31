@@ -5,9 +5,13 @@
 from __future__ import annotations
 
 import enum
+from dataclasses import dataclass
 from typing import Any
 
-from .._config import Config as BaseConfig
+import serde
+from typing_extensions import Self
+
+from .._config import Config as _Config
 
 
 class CLIPModel(enum.Enum):
@@ -45,12 +49,13 @@ class CLIPModel(enum.Enum):
                 raise ValueError(f"Invalid CLIP model: {self}")
 
 
-class Config(BaseConfig):
-    def __init__(self, cfg: dict[str, Any]) -> None:
-        super().__init__(cfg)
+@serde.serde(type_check=serde.Strict)
+@dataclass(frozen=True)
+class Config(_Config):
+    """Configuration for baseline model."""
 
-        self._clip = CLIPModel.from_str(cfg.get("clip", "B32"))
+    clip: CLIPModel = serde.field(default=CLIPModel.ViT_B_32_224)
 
-    @property
-    def clip(self) -> CLIPModel:
-        return self._clip
+    @classmethod
+    def from_dict(cls, cfg: dict[str, Any]) -> Self:
+        return serde.from_dict(cls, cfg)

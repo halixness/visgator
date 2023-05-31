@@ -7,6 +7,7 @@ from typing import Optional
 import torch
 from torch import nn
 from transformers import CLIPModel, CLIPProcessor
+from typing_extensions import Self
 
 from visgator.utils.batch import Batch
 from visgator.utils.bbox import BBox, BBoxes, BBoxFormat
@@ -31,6 +32,10 @@ class Model(BaseModel[BBoxes]):
         for param in self._clip.parameters():
             param.requires_grad = False
 
+    @classmethod
+    def from_config(cls, config: Config) -> Self:  # type: ignore
+        return cls(config)
+
     @property
     def criterion(self) -> Optional[Criterion]:
         return Criterion()
@@ -40,7 +45,7 @@ class Model(BaseModel[BBoxes]):
 
     def forward(self, batch: Batch) -> BBoxes:
         images = [sample.image for sample in batch]
-        sentences = [sample.sentence for sample in batch]
+        sentences = [sample.caption.sentence for sample in batch]
 
         inputs = self._processor(
             text=sentences,
@@ -63,14 +68,8 @@ class Model(BaseModel[BBoxes]):
         embeds = torch.cat((image_embeds, text_embeds), dim=-1)
         outputs = self._head(embeds)
 
-        res = BBoxes()
+        bboxes = []
         for sample, output in zip(batch, outputs):
-            res.append(
-                BBox(
-                    output,
-                    sample.image.shape[1:],  # type: ignore
-                    BBoxFormat.CXCYWHN,
-                )
-            )
+            bboxes.append(BBox(output, sample.image.shape[1:], BBoxFormat.CXCYWH, True))
 
-        return res
+        return BBoxes.from_bboxes(bboxes)

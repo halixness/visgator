@@ -21,5 +21,7 @@ class Criterion(BaseCriterion[BBoxes]):
         return [LossInfo("l1_loss", 1.0)]
 
     def forward(self, output: BBoxes, target: BBoxes) -> dict[str, Float[Tensor, ""]]:
-        loss = F.l1_loss(output.xyxyn, target.xyxyn)
+        output = output.to_xyxy().normalize()
+        target = target.to_xyxy().normalize()
+        loss = F.l1_loss(output.tensor, target.tensor)
         return {"l1_loss": loss}
