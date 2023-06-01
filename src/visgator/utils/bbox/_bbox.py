@@ -3,7 +3,7 @@
 ##
 
 import enum
-from typing import Iterator, Union, overload
+from typing import Iterator, Optional, Union, overload
 
 import torch
 from jaxtyping import Float, Int
@@ -209,6 +209,31 @@ class BBoxes:
         self._format = format
         self._normalized = normalized
 
+    @property
+    def device(self) -> torch.device:
+        """Returns the device of the bounding boxes."""
+        return self._boxes.device
+
+    @property
+    def format(self) -> BBoxFormat:
+        """Returns the format of the bounding boxes."""
+        return self._format
+
+    @property
+    def normalized(self) -> bool:
+        """Returns whether the bounding boxes are normalized."""
+        return self._normalized
+
+    @property
+    def images_size(self) -> list[tuple[int, int]]:
+        """Returns the image sizes of the bounding boxes."""
+        return [(height.item(), width.item()) for height, width in self._images_size]
+
+    @property
+    def tensor(self) -> Float[Tensor, "N 4"]:
+        """Returns the bounding boxes as a tensor."""
+        return self._boxes
+
     @classmethod
     def from_bboxes(cls, bboxes: list[BBox]) -> Self:
         """Creates a collection of bounding boxes from a list of bounding boxes."""
@@ -225,6 +250,34 @@ class BBoxes:
         images_size = [bbox.image_size for bbox in bboxes]
 
         return cls(boxes, images_size, format, normalized)
+
+    @classmethod
+    def pad_bboxes(
+        cls,
+        bboxes: list[Self],
+        padding_value: Optional[Float[Tensor, "4"]] = None,
+    ) -> Self:
+        max_num = max([len(bboxes) for bboxes in bboxes])
+
+        if padding_value is None:
+            padding_value = bboxes[0]._boxes.new_zeros(4)
+
+        boxes = bboxes[0]._boxes.new_zeros(len(bboxes) * max_num, 4)
+        images_size = bboxes[0]._images_size.new_empty(len(bboxes) * max_num, 2)
+
+        for i, bboxes_ in enumerate(bboxes):
+            start = i * max_num
+            end = start + len(bboxes_)
+
+            boxes[start:end] = bboxes_.to_xyxy().normalize()._boxes
+            images_size[start:end] = bboxes_._images_size
+
+        return cls(
+            boxes,
+            images_size,
+            BBoxFormat.XYXY,
+            True,
+        )
 
     def to_xyxy(self) -> Self:
         """Converts the bounding boxes to the format (x1, y1, x2, y2)."""
@@ -332,30 +385,30 @@ class BBoxes:
             case _:
                 raise ValueError(f"Unknown bounding box format: {self._format}")
 
-    @property
-    def device(self) -> torch.device:
-        """Returns the device of the bounding boxes."""
-        return self._boxes.device
+    def union(self, other: Self) -> Self:
+        """Returns the union of the bounding boxes."""
 
-    @property
-    def format(self) -> BBoxFormat:
-        """Returns the format of the bounding boxes."""
-        return self._format
+        if self._images_size != other._images_size:
+            raise ValueError("Bounding boxes must have the same image size.")
 
-    @property
-    def normalized(self) -> bool:
-        """Returns whether the bounding boxes are normalized."""
-        return self._normalized
+        if len(self) != len(other):
+            raise ValueError("Bounding boxes must have the same length.")
 
-    @property
-    def images_size(self) -> list[tuple[int, int]]:
-        """Returns the image sizes of the bounding boxes."""
-        return [(height.item(), width.item()) for height, width in self._images_size]
+        if self._normalized != other._normalized:
+            boxes1 = self.to_xyxy().normalize()._boxes
+            boxes2 = other.to_xyxy().normalize()._boxes
+        else:
+            boxes1 = self.to_xyxy()._boxes
+            boxes2 = other.to_xyxy()._boxes
 
-    @property
-    def tensor(self) -> Float[Tensor, "N 4"]:
-        """Returns the bounding boxes as a tensor."""
-        return self._boxes
+        union = ops.union_box_pairwise(boxes1, boxes2)
+
+        return self.__class__(
+            union,
+            self._images_size,
+            BBoxFormat.XYXY,
+            self._normalized,
+        )
 
     def __len__(self) -> int:
         return len(self._boxes)
