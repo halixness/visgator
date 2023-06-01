@@ -7,7 +7,7 @@ from typing import Protocol
 import openai
 import sng_parser
 
-from ._graph import Relation, SceneGraph
+from ._graph import Entity, Relation, SceneGraph
 
 
 class _SceneGraphParser(Protocol):
@@ -62,7 +62,7 @@ class SpacySceneGraphParser(_SceneGraphParser):
 
         entities = []
         for entity in graph["entities"]:
-            entities.append(entity["span"])
+            entities.append(Entity(entity["span"], entity["head"]))
 
         relations = []
         for relation in graph["relations"]:

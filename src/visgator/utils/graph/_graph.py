@@ -10,9 +10,48 @@ import serde
 from typing_extensions import Self
 
 
-@serde.serde
+@serde.serde(type_check=serde.Strict)
+@dataclass(frozen=True)
+class Entity:
+    """Represents an entity in the scene graph.
+
+    Attributes
+    ----------
+    span : str
+        The span of the entity in the original sentence.
+        For example, "the red ball" or "the table" in "the red ball is on the table".
+    head : str
+        The head of the entity in the original sentence.
+        For example, "ball" or "table" in "the red ball is on the table".
+    """
+
+    span: str
+    head: str
+
+    def to_dict(self) -> dict[str, str]:
+        return serde.to_dict(self)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, str]) -> Self:
+        return serde.from_dict(cls, data)
+
+
+@serde.serde(type_check=serde.Strict)
 @dataclass(frozen=True)
 class Relation:
+    """Represents a relation in the scene graph.
+
+    Attributes
+    ----------
+    subject : int
+        The index of the subject entity in the scene graph.
+    predicate : str
+        The predicate of the relation.
+        For example, "is on" in "the red ball is on the table".
+    object : int
+        The index of the object entity in the scene graph.
+    """
+
     subject: int
     predicate: str
     object: int
@@ -36,7 +75,17 @@ class Connection:
 
 
 class SceneGraph:
-    def __init__(self, entities: list[str], relations: list[Relation]) -> None:
+    """Represents a scene graph.
+
+    Attributes
+    ----------
+    entities : list[Entity]
+        A list of entities in the scene graph.
+    relations : list[Relation]
+        A list of relations in the scene graph.
+    """
+
+    def __init__(self, entities: list[Entity], relations: list[Relation]) -> None:
         self._graph = rx.PyGraph()
         self._graph.add_nodes_from(entities)
         self._graph.add_edges_from(
@@ -50,7 +99,7 @@ class SceneGraph:
         }
 
     @property
-    def entities(self) -> list[str]:
+    def entities(self) -> list[Entity]:
         """Returns a list of entities in the graph."""
         return list(self._graph.nodes())
 
@@ -73,13 +122,13 @@ class SceneGraph:
     def from_dict(cls, data: dict[str, Any]) -> Self:
         """Creates a SceneGraph from a dictionary."""
         return cls(
-            entities=data["entities"],
+            entities=[Entity.from_dict(e) for e in data["entities"]],
             relations=[Relation.from_dict(r) for r in data["relations"]],
         )
 
     def to_dict(self) -> dict[str, Any]:
         """Returns a dictionary representation of the SceneGraph."""
         return {
-            "entities": list(self._graph.nodes()),
+            "entities": [e.to_dict() for e in self.entities],
             "relations": [rel.to_dict() for rel in self.relations],
         }

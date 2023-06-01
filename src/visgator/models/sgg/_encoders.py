@@ -253,10 +253,11 @@ class TextEncoder(nn.Module):
             relations = caption.graph.relations
 
             texts.append(caption.sentence)
-            texts.extend(entities)
+            texts.extend([entity.span for entity in entities])
             texts.extend(
                 [
-                    f"{entities[rel.subject]} {rel.predicate} {entities[rel.object]}"
+                    f"{entities[rel.subject].span} {rel.predicate} "
+                    f"{entities[rel.object].span}"
                     for rel in relations
                 ]
             )

@@ -51,7 +51,7 @@ class Detector(nn.Module):
             graph = sample.caption.graph
             assert graph is not None
 
-            entities[i] = [entity.lower().strip() for entity in graph.entities]
+            entities[i] = [entity.head.lower().strip() for entity in graph.entities]
             captions[i] = " . ".join(entities[i]) + " ."
 
         gdino_images = NestedTensor(images.tensor, images.mask)
