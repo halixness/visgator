@@ -15,11 +15,99 @@ from visgator.models import Config as ModelConfig
 from .lr_schedulers import Config as LRSchedulerConfig
 from .optimizers import Config as OptimizerConfig
 
+# ---------------------------------------------------------------------------
+# Wandb
+# ---------------------------------------------------------------------------
+
+
+@serde.serde(type_check=serde.Strict)
+@dataclass(frozen=True)
+class WandbRunArgs:
+    """Arguments for wandb run."""
+
+    project: Optional[str] = "visual grounding"
+    job_type: Optional[str] = "train"
+    entity: Optional[str] = None
+    name: Optional[str] = None
+    tags: Optional[list[str]] = None
+    notes: Optional[str] = None
+    id: Optional[str] = None
+
+    @classmethod
+    def from_dict(cls, cfg: dict[str, Any]) -> Self:
+        """Deserializes a dictionary into a WandbRunArgs object."""
+        return serde.from_dict(cls, cfg)
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serializes a WandbRunArgs object into a dictionary."""
+        return serde.to_dict(self)
+
+
+@serde.serde(type_check=serde.Strict)
+@dataclass(frozen=True)
+class WandbConfig:
+    """Configuration for wandb."""
+
+    args: Optional[WandbRunArgs] = serde.field(
+        serializer=WandbRunArgs.to_dict,
+        deserializer=WandbRunArgs.from_dict,
+        metadata={"serde_flatten": True},
+    )
+    enabled: bool = True
+
+    @classmethod
+    def from_dict(cls, cfg: dict[str, Any]) -> Self:
+        """Deserializes a dictionary into a WandbConfig object."""
+        enabled = bool(cfg.get("enabled", True))
+        if not enabled:
+            args = None
+        else:
+            args = WandbRunArgs.from_dict(cfg)
+
+        return cls(args=args, enabled=enabled)
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serializes a WandbConfig object into a dictionary."""
+        return serde.to_dict(self)
+
+
+# ---------------------------------------------------------------------------
+# Config
+# ---------------------------------------------------------------------------
+
 
 @serde.serde(type_check=serde.Strict)
 @dataclass(frozen=True)
 class Config:
     """Configuration for training."""
+
+    dir: Path
+    wandb: WandbConfig = serde.field(
+        serializer=WandbConfig.to_dict,
+        deserializer=WandbConfig.from_dict,
+    )
+    params: dict[str, Any] = serde.field(skip=True, metadata={"serde_flatten": True})
+    debug: bool = False
+
+    @classmethod
+    def from_dict(cls, cfg: dict[str, Any]) -> Self:
+        """Deserializes a dictionary into a Config object."""
+        return serde.from_dict(cls, cfg)
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serializes a Config object into a dictionary."""
+        return serde.to_dict(self)
+
+
+# ---------------------------------------------------------------------------
+# Training Parameters
+# ---------------------------------------------------------------------------
+
+
+@serde.serde(type_check=serde.Strict)
+@dataclass(frozen=True)
+class Params:
+    """Parameters for training."""
 
     num_epochs: int
     batch_size: int
@@ -32,13 +120,11 @@ class Config:
     )
 
     seed: int = 3407
-    debug: bool = False
     compile: bool = True
     output_dir: Path = Path("output")
     checkpoint_interval: int = 1
     gradient_accumulation_steps: int = 1
     device: Optional[str] = None
-    resume_dir: Optional[Path] = None
     max_grad_norm: Optional[float] = None
 
     def __post_init__(self) -> None:
@@ -73,5 +159,9 @@ class Config:
 
     @classmethod
     def from_dict(cls, cfg: dict[str, Any]) -> Self:
-        """Deserialize a dictionary into a Config object."""
+        """Deserializes a dictionary into a Params object."""
         return serde.from_dict(cls, cfg)
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serializes a Params object into a dictionary."""
+        return serde.to_dict(self)

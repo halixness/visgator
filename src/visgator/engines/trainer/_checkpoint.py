@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 import torch
+import wandb
 from typing_extensions import Self
 
 
@@ -23,6 +24,7 @@ class Checkpoint:
 
     def save(self, checkpoint_file: Path) -> None:
         torch.save(self.__dict__, checkpoint_file)
+        wandb.save(str(checkpoint_file))
 
     @classmethod
     def from_file(cls, checkpoint_file: Path, device: torch.device) -> Self:
