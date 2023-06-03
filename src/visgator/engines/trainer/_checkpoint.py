@@ -16,6 +16,7 @@ class Checkpoint:
     epoch: int
     model: dict[str, Any]
     criterion: dict[str, Any]
+    postprocessor: dict[str, Any]
     optimizer: dict[str, Any]
     lr_scheduler: dict[str, Any]
     scaler: dict[str, Any]

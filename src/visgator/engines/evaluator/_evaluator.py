@@ -14,8 +14,8 @@ from tqdm import tqdm
 from typing_extensions import Self
 
 from visgator.datasets import Dataset, Split
-from visgator.metrics import GIoU, IoU
-from visgator.models import Model
+from visgator.metrics import GIoU, IoU, IoUAccuracy
+from visgator.models import Model, PostProcessor
 from visgator.utils.batch import Batch
 from visgator.utils.bbox import BBoxes
 from visgator.utils.device import Device
@@ -36,6 +36,7 @@ class Evaluator(Generic[_T]):
         self._device: Device
         self._loader: DataLoader[tuple[Batch, BBoxes]]
         self._model: Model[_T]
+        self._postprocessor: PostProcessor[_T]
         self._metrics: tm.MetricCollection
 
     @classmethod
@@ -85,7 +86,10 @@ class Evaluator(Generic[_T]):
         self._logger.info(f"Using model {self._config.model.name}.")
 
         model: Model[_T] = Model.from_config(self._config.model)
+        postprocessor = model.postprocessor
+
         model = model.to(self._device.to_torch())
+        postprocessor = postprocessor.to(self._device.to_torch())
 
         if self._config.weights is None:
             self._logger.warning("No weights loaded, using initialization weights.")
@@ -104,16 +108,22 @@ class Evaluator(Generic[_T]):
 
         if self._config.compile:
             self._logger.info("Compiling model.")
-            self._model = torch.compile(model)  # type: ignore
+            model = torch.compile(model)  # type: ignore
         else:
             self._logger.info("Skipping model compilation.")
-            self._model = model
+            model = model
+
+        self._model = model
+        self._postprocessor = postprocessor
 
     def _set_metrics(self) -> None:
         self._metrics = tm.MetricCollection(
             {
                 "IoU": IoU(),
                 "GIoU": GIoU(),
+                "Accuracy@50": IoUAccuracy(0.5),
+                "Accuracy@75": IoUAccuracy(0.75),
+                "Accuracy@90": IoUAccuracy(0.9),
             },
         ).to(self._device.to_torch())
 
@@ -132,7 +142,7 @@ class Evaluator(Generic[_T]):
             bboxes = bboxes.to(self._device.to_torch())
 
             output = self._model(batch)
-            predictions = self._model.predict(output)
+            predictions = self._postprocessor(output)
 
             self._metrics.update(
                 predictions.to_xyxy().normalize().tensor,

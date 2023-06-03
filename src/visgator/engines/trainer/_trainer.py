@@ -21,7 +21,7 @@ from typing_extensions import Self
 
 from visgator.datasets import Dataset, Split
 from visgator.metrics import GIoU, IoU, IoUAccuracy, LossTracker
-from visgator.models import Criterion, Model
+from visgator.models import Criterion, Model, PostProcessor
 from visgator.utils.batch import Batch
 from visgator.utils.bbox import BBoxes
 from visgator.utils.device import Device
@@ -51,6 +51,7 @@ class Trainer(Generic[_T]):
         self._eval_loader: DataLoader[tuple[Batch, BBoxes]]
         self._model: Model[_T]
         self._criterion: Criterion[_T]
+        self._postprocessor: PostProcessor[_T]
         self._optimizer: Optimizer
         self._lr_scheduler: LRScheduler
         self._scaler: GradScaler
@@ -191,6 +192,7 @@ class Trainer(Generic[_T]):
             epoch=epoch,
             model=self._model.state_dict(),
             criterion=self._criterion.state_dict(),
+            postprocessor=self._postprocessor.state_dict(),
             optimizer=self._optimizer.state_dict(),
             lr_scheduler=self._lr_scheduler.state_dict(),
             scaler=self._scaler.state_dict(),
@@ -285,6 +287,7 @@ class Trainer(Generic[_T]):
 
         model: Model[_T] = Model.from_config(self._params.model)
         criterion = model.criterion
+        postprocessor = model.postprocessor
         if criterion is None:
             raise ValueError(
                 f"Model {self._params.model.name} cannot be trained "
@@ -293,11 +296,13 @@ class Trainer(Generic[_T]):
 
         model = model.to(self._device.to_torch())
         criterion = criterion.to(self._device.to_torch())
+        postprocessor = postprocessor.to(self._device.to_torch())
 
         if checkpoint is not None:
             model.load_state_dict(checkpoint.model)
             criterion.load_state_dict(checkpoint.criterion)
-            self._logger.info("Loaded model weights from checkpoint.")
+            postprocessor.load_state_dict(checkpoint.postprocessor)
+            self._logger.info("Loaded model toolchain state from checkpoint.")
 
         if self._params.compile:
             if not self._resumed:
@@ -308,6 +313,7 @@ class Trainer(Generic[_T]):
 
         self._model = model
         self._criterion = criterion
+        self._postprocessor = postprocessor
 
     def _set_optimizer(self, checkpoint: Optional[Checkpoint] = None) -> None:
         if not self._resumed:
@@ -470,7 +476,7 @@ class Trainer(Generic[_T]):
                     self._lr_scheduler.step_after_batch()
 
                 with torch.no_grad():
-                    pred_bboxes = self._model.predict(outputs)
+                    pred_bboxes = self._postprocessor(outputs)
                     self._tm_tracker.update(
                         pred_bboxes.to_xyxy().normalize().tensor,
                         bboxes.to_xyxy().normalize().tensor,
@@ -508,7 +514,7 @@ class Trainer(Generic[_T]):
                 tmp_losses = self._criterion(outputs, bboxes)
                 self._el_tracker.update(tmp_losses)
 
-            pred_bboxes = self._model.predict(outputs)
+            pred_bboxes = self._postprocessor(outputs)
             self._em_tracker.update(
                 pred_bboxes.to_xyxy().normalize().tensor,
                 bboxes.to_xyxy().normalize().tensor,

@@ -9,17 +9,20 @@ from transformers import CLIPModel, CLIPProcessor
 from typing_extensions import Self
 from ultralytics import YOLO
 
+from visgator.models import Criterion
+from visgator.models import Model as _Model
 from visgator.utils.batch import Batch, BatchSample
 from visgator.utils.bbox import BBox, BBoxes, BBoxFormat
 
-from .._criterion import Criterion
-from .._model import Model as BaseModel
 from ._config import Config
+from ._postprocessor import PostProcessor
 
 
-class Model(BaseModel[BBoxes]):
+class Model(_Model[BBoxes]):
     def __init__(self, config: Config) -> None:
         super().__init__(config)
+
+        self._postprocessor = PostProcessor()
 
         self._yolo = YOLO(config.yolo.weights())
         self._clip_processor = CLIPProcessor.from_pretrained(config.clip.weights())
@@ -35,8 +38,9 @@ class Model(BaseModel[BBoxes]):
     def criterion(self) -> Optional[Criterion[BBoxes]]:
         return None
 
-    def predict(self, output: BBoxes) -> BBoxes:
-        return output
+    @property
+    def postprocessor(self) -> PostProcessor:
+        return self._postprocessor
 
     def forward(self, batch: Batch) -> BBoxes:
         boxes = []
