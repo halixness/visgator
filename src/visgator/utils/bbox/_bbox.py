@@ -3,7 +3,7 @@
 ##
 
 import enum
-from typing import Iterator, Optional, Union, overload
+from typing import Iterator, Union, overload
 
 import torch
 from jaxtyping import Float, Int
@@ -225,9 +225,9 @@ class BBoxes:
         return self._normalized
 
     @property
-    def images_size(self) -> list[tuple[int, int]]:
+    def images_size(self) -> Int[Tensor, "N 2"]:
         """Returns the image sizes of the bounding boxes."""
-        return [(height.item(), width.item()) for height, width in self._images_size]
+        return self._images_size
 
     @property
     def tensor(self) -> Float[Tensor, "N 4"]:
@@ -250,34 +250,6 @@ class BBoxes:
         images_size = [bbox.image_size for bbox in bboxes]
 
         return cls(boxes, images_size, format, normalized)
-
-    @classmethod
-    def pad_bboxes(
-        cls,
-        bboxes: list[Self],
-        padding_value: Optional[Float[Tensor, "4"]] = None,
-    ) -> Self:
-        max_num = max([len(bboxes) for bboxes in bboxes])
-
-        if padding_value is None:
-            padding_value = bboxes[0]._boxes.new_zeros(4)
-
-        boxes = bboxes[0]._boxes.new_zeros(len(bboxes) * max_num, 4)
-        images_size = bboxes[0]._images_size.new_empty(len(bboxes) * max_num, 2)
-
-        for i, bboxes_ in enumerate(bboxes):
-            start = i * max_num
-            end = start + len(bboxes_)
-
-            boxes[start:end] = bboxes_.to_xyxy().normalize()._boxes
-            images_size[start:end] = bboxes_._images_size
-
-        return cls(
-            boxes,
-            images_size,
-            BBoxFormat.XYXY,
-            True,
-        )
 
     def to_xyxy(self) -> Self:
         """Converts the bounding boxes to the format (x1, y1, x2, y2)."""

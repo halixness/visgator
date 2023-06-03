@@ -19,7 +19,7 @@ from .._config import Config as _Config
 class EncodersConfig:
     """Configuration for encoders."""
 
-    hidden_dim: int
+    hidden_dim: int = serde.field(skip=True)
     model: str = "ViT-B-32"
     pretrained: str = "laion2b_s34b_b79k"
 
@@ -54,10 +54,11 @@ class DetectorConfig:
 class DecoderConfig:
     """Configuration for decoder."""
 
-    hidden_dim: int
     num_layers: int
+    hidden_dim: int = serde.field(skip=True)
     num_heads: int = 8
-    dropout: float = 0.1
+    epsilon_layer_scale: float = 0.1  # our decoder has less than 18 layers
+    dropout: float = serde.field(default=0.1, skip=True)
 
     def __post_init__(self) -> None:
         if self.num_layers < 1:
@@ -82,9 +83,29 @@ class DecoderConfig:
 
 @serde.serde(type_check=serde.Strict)
 @dataclass(frozen=True)
+class CriterionConfig:
+    """Configuration for criterion."""
+
+    l1_weight: float = 1.0
+    giou_weight: float = 1.0
+    info_nce_weight: float = 1.0
+    temperature: float = 0.1
+
+    @classmethod
+    def from_dict(cls, cfg: dict[str, Any]) -> Self:
+        return serde.from_dict(cls, cfg)
+
+    def to_dict(self) -> dict[str, Any]:
+        return serde.to_dict(self)
+
+
+@serde.serde(type_check=serde.Strict)
+@dataclass(frozen=True)
 class Config(_Config):
     """Configuration for SceneGraphGrounder model."""
 
+    hidden_dim: int
+    dropout: float = 0.1
     encoders: EncodersConfig = serde.field(
         serializer=EncodersConfig.to_dict,
         deserializer=EncodersConfig.from_dict,
@@ -97,6 +118,10 @@ class Config(_Config):
         serializer=DecoderConfig.to_dict,
         deserializer=DecoderConfig.from_dict,
     )
+    criterion: CriterionConfig = serde.field(
+        serializer=CriterionConfig.to_dict,
+        deserializer=CriterionConfig.from_dict,
+    )
 
     @classmethod
     def from_dict(cls, cfg: dict[str, Any]) -> Self:
@@ -104,8 +129,11 @@ class Config(_Config):
         if hidden_dim is None:
             raise ValueError("hidden_dim must be provided.")
 
+        dropout = cfg.get("dropout", 0.1)
+
         cfg["encoder"]["hidden_dim"] = hidden_dim
         cfg["decoder"]["hidden_dim"] = hidden_dim
+        cfg["decoder"]["dropout"] = dropout
 
         return serde.from_dict(cls, cfg)
 

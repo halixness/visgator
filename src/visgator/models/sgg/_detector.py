@@ -94,7 +94,7 @@ class Detector(nn.Module):
                 boxes=BBoxes(
                     boxes=torch.stack(boxes),
                     images_size=images.sizes[i],
-                    format=BBoxFormat.XYXY,
+                    format=BBoxFormat.CXCYWH,
                     normalized=True,
                 ),
             )

@@ -10,15 +10,15 @@ from visgator.utils.bbox import BBoxes, ops
 
 
 # Code taken from https://github.com/IDEA-Research/detrex/blob/main/detrex/layers/position_embedding.py
-class Position2DEncodings(nn.Module):
+class PatchSpatialEncodings(nn.Module):
     """Positional sinusoidal encodings for 2D images."""
 
-    def __init__(self, hidden_dim: int, temperature: int = 10000) -> None:
+    def __init__(self, dim: int, temperature: int = 10000) -> None:
         super().__init__()
 
-        if hidden_dim % 2 != 0:
+        if dim % 2 != 0:
             raise ValueError("hidden_dim must be divisible by 2.")
-        self._dim = hidden_dim // 2
+        self._dim = dim // 2
 
         self._temperature = temperature
 
@@ -53,7 +53,7 @@ class Position2DEncodings(nn.Module):
         return super.__call__(mask)  # type: ignore
 
 
-class GaussianHeatmap(nn.Module):
+class GaussianHeatmaps(nn.Module):
     """Gaussian heatmaps for 2D images."""
 
     def __init__(self, beta: float = 1.0) -> None:
@@ -62,7 +62,7 @@ class GaussianHeatmap(nn.Module):
         self._beta = beta
 
     def forward(self, boxes: BBoxes, size: tuple[int, int]) -> Float[Tensor, "B HW"]:
-        boxes = boxes.to_xyxy().normalize()  # (B, 4)
+        boxes = boxes.to_xyxy().denormalize()  # (B, 4)
 
         mean = boxes.tensor[:, :2]  # (B, 2)
         std = boxes.tensor[:, 2:]  # (B, 2)
@@ -71,9 +71,7 @@ class GaussianHeatmap(nn.Module):
         coords = torch.cartesian_prod(
             torch.arange(height, device=boxes.device),
             torch.arange(width, device=boxes.device),
-        )
-
-        coords = coords / torch.tensor([height, width], device=boxes.device)
+        )  # (HW, 2)
 
         coords = coords[None].expand(len(boxes), -1, -1)  # (B, HW, 2)
 
@@ -91,23 +89,19 @@ class GaussianHeatmap(nn.Module):
         return super.__call__(boxes, size)  # type: ignore
 
 
-class SpatialRelationEncodings(nn.Module):
-    def __init__(self, hidden_dim: int, temperature: int = 10000) -> None:
+class RelationSpatialEncondings(nn.Module):
+    def __init__(self, dim: int, temperature: int = 10000) -> None:
         super().__init__()
 
-        # center coordinates x 2 = 4
-        # width and height x 2 = 4
-        # area x 2 = 2
-        # aspect ratio x 2 = 2
-        # intersection over union = 1
+        # distance between centers = 2
         # union area = 1
-        # center distance x 2 = 2
-        # total = 16
+        # intersection over union = 1
+        # total = 4
 
-        if hidden_dim % 16 != 0:
-            raise ValueError("hidden_dim must be divisible by 16.")
+        if dim % 4 != 0:
+            raise ValueError("dim must be divisible by 4.")
 
-        self._dim = hidden_dim // 16
+        self._dim = dim // 4
         self._temperature = temperature
 
     def forward(self, boxes1: BBoxes, boxes2: BBoxes) -> Float[Tensor, "B C"]:
@@ -121,14 +115,6 @@ class SpatialRelationEncodings(nn.Module):
 
         center1 = cxcywh1.tensor[:, :2]  # (B, 2)
         center2 = cxcywh2.tensor[:, :2]  # (B, 2)
-        wh1 = cxcywh1.tensor[:, 2:]  # (B, 2)
-        wh2 = cxcywh2.tensor[:, 2:]  # (B, 2)
-
-        area1 = wh1.prod(dim=1, keepdim=True)  # (B, 1)
-        area2 = wh2.prod(dim=1, keepdim=True)  # (B, 1)
-
-        aspect_ratio1 = (wh1[:, 0] / wh1[:, 1])[None]  # (B, 1)
-        aspect_ratio2 = (wh2[:, 0] / wh2[:, 1])[None]  # (B, 1)
 
         iou, union = ops.box_iou_pairwise(xyxy1.tensor, xyxy2.tensor)  # (B,)
         iou = iou[None]  # (B, 1)
@@ -137,37 +123,58 @@ class SpatialRelationEncodings(nn.Module):
         distancex = (center1[:, 0] - center2[:, 0])[None]  # (B, 1)
         distancey = (center1[:, 1] - center2[:, 1])[None]  # (B, 1)
 
-        pos = torch.cat(
-            (
-                center1,
-                center2,
-                wh1,
-                wh2,
-                area1,
-                area2,
-                aspect_ratio1,
-                aspect_ratio2,
-                iou,
-                union,
-                distancex,
-                distancey,
-            ),
-        )  # (B, 16)
-        pos = pos.unsqueeze(-1)  # (B, 16, 1)
+        pos = torch.cat((distancex, distancey, union, iou))  # (B, 4)
+        pos = pos.unsqueeze(-1)  # (B, 4, 1)
 
         # transform this vector into a sinuoidal encoding
         dim_t = torch.arange(
-            self._dim, dtype=torch.float32, device=boxes1.device
-        )  # (C / 16)
+            self._dim,
+            dtype=torch.float32,
+            device=boxes1.device,
+        )  # (C / 4)
         dim_t = self._temperature ** (
             2 * torch.div(dim_t, 2, rounding_mode="floor") / self._dim
-        )  # (C / 16)
+        )  # (C / 4)
 
-        pos = pos / dim_t  # (B, 16, C / 16)
+        pos = pos / dim_t  # (B, 4, C / 4)
         pos[..., 0::2] = pos[..., 0::2].sin()
         pos[..., 1::2] = pos[..., 1::2].cos()
 
-        return pos.view(-1, self._dim * 16)  # (B, C)
+        return pos.view(pos.shape[0], -1)  # (B, C)
 
     def __call__(self, boxes1: BBoxes, boxes2: BBoxes) -> Float[Tensor, "B C"]:
         return super.__call__(boxes1, boxes2)  # type: ignore
+
+
+class EntitySpatialEncodings(nn.Module):
+    def __init__(self, dim: int, temperature: int = 10000) -> None:
+        super().__init__()
+
+        if dim % 4 != 0:
+            raise ValueError("dim must be divisible by 4.")
+
+        self._dim = dim // 4
+        self._temperature = temperature
+
+    def forward(self, boxes: BBoxes) -> Float[Tensor, "B C"]:
+        boxes = boxes.to_cxcywh().normalize()  # (B, 4)
+
+        pos = boxes.tensor.unsqueeze(-1)
+
+        dim_t = torch.arange(
+            self._dim,
+            dtype=torch.float32,
+            device=boxes.device,
+        )  # (C / 4)
+        dim_t = self._temperature ** (
+            2 * torch.div(dim_t, 2, rounding_mode="floor") / self._dim
+        )  # (C / 4)
+
+        pos = pos / dim_t  # (B, 4, C / 4)
+        pos[..., 0::2] = pos[..., 0::2].sin()
+        pos[..., 1::2] = pos[..., 1::2].cos()
+
+        return pos.view(pos.shape[0], -1)  # (B, C)
+
+    def __call__(self, boxes: BBoxes) -> Float[Tensor, "B C"]:
+        return super.__call__(boxes)  # type: ignore

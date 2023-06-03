@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from typing import Literal, Union, overload
 
 import torch
-from jaxtyping import Float, Int64
+from jaxtyping import Bool, Float, Int64
 from torch import Tensor
 from typing_extensions import Self
 
@@ -68,7 +68,7 @@ class Graph:
         for idx, detection in enumerate(detections.entities):
             entity = detection.item()
             tmp = (detections.entities == entity).nonzero(as_tuple=True)[0]
-            tmp = tmp[tmp != idx]
+            # tmp = tmp[tmp != idx] remove this comment if you want to remove self loops
 
             indexes = torch.cat(
                 [torch.tensor([idx])[None].expand(1, len(tmp)), tmp[None]],
@@ -168,8 +168,7 @@ class NestedGraph:
         if batch:
             return self._nodes
         else:
-            nodes = self._nodes.unbind(0)
-            return torch.stack(nodes, dim=0)
+            return self._nodes.flatten(0, 1)
 
     @overload
     def edges(self, batch: Literal[False]) -> Float[Tensor, "BE D"]:
@@ -186,8 +185,7 @@ class NestedGraph:
         if batch:
             return self._edges
         else:
-            edges = self._edges.unbind(0)
-            return torch.stack(edges, dim=0)
+            return self._edges.flatten(0, 1)
 
     @overload
     def edge_index(self, batch: Literal[False]) -> Int64[Tensor, "2 BE"]:
@@ -225,3 +223,11 @@ class NestedGraph:
 
     def __len__(self) -> int:
         return len(self._sizes)
+
+
+@dataclass(frozen=True)
+class ModelOutput:
+    sentences: Float[Tensor, "B D"]
+    graph: NestedGraph
+    boxes: BBoxes  # (BN, 4)
+    mask: Bool[Tensor, "B N"]
