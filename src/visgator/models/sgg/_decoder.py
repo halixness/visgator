@@ -24,6 +24,7 @@ class Decoder(nn.Module):
     def __init__(self, config: DecoderConfig) -> None:
         super().__init__()
 
+        self._num_heads = config.num_heads
         self._hidden_dim = config.hidden_dim
         self._same_entity_edge = nn.Parameter(torch.randn(1, config.hidden_dim))
 
@@ -67,7 +68,8 @@ class Decoder(nn.Module):
 
         flattened_images = images.flatten()  # (B HW D)
         masks = flattened_images.mask.unsqueeze(1).expand(-1, heatmaps.shape[1], -1)
-        masks = heatmaps.masked_fill_(masks, float("-inf"))  # (B (N+E) HW)
+        masks = heatmaps.masked_fill_(masks, -torch.inf)  # (B (N+E) HW)
+        masks = masks.repeat(self._num_heads, 1, 1)  # (Bh (N+E) HW)
 
         node_encodings = self._node_encodings(boxes)  # (BN D)
         edge_encodings = self._edge_encodings(boxes1, boxes2)  # (BE D)
@@ -125,7 +127,7 @@ class DecoderLayer(nn.Module):
         node_encodings: Float[Tensor, "BN D"],
         edge_encodings: Float[Tensor, "BE D"],
         images: Float[Tensor, "B HW D"],
-        mask: Float[Tensor, "BH (N+E) HW"],
+        mask: Float[Tensor, "Bh (N+E) HW"],
     ) -> NestedGraph:
         nodes, edges = graph.nodes(True), graph.edges(True)  # (B N D), (B E D)
         N = nodes.shape[1]
@@ -143,7 +145,7 @@ class DecoderLayer(nn.Module):
         ne1 = ne + self._layerscale1(ne1)  # (B (N+E) D)
 
         # graph attention
-        ne2 = self._norm2(ne)  # (B (N+E) D)
+        ne2 = self._norm2(ne1)  # (B (N+E) D)
         nodes, edges = ne2[:, :N], ne2[:, N:]  # (B N D), (B E D)
         graph = graph.new_like(nodes, edges)
         graph = self._gat(graph, node_encodings, edge_encodings)
@@ -152,7 +154,7 @@ class DecoderLayer(nn.Module):
         ne2 = ne1 + self._layerscale2(ne2)  # (B (N+E) D)
 
         # feedforward
-        ne3 = self._norm3(ne)  # (B (N+E) D)
+        ne3 = self._norm3(ne2)  # (B (N+E) D)
         ne3 = self._ffn(ne3)  # (B (N+E) D)
         ne3 = ne2 + self._layerscale3(ne3)  # (B (N+E) D)
 

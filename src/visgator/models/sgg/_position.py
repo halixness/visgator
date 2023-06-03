@@ -38,12 +38,11 @@ class PatchSpatialEncodings(nn.Module):
         pos_y = y_embed[:, :, :, None] / dim_t  # (B, H, W, C / 2)
 
         B, H, W = mask.size()
-        pos_x = torch.stack(
-            (pos_x[:, :, :, 0::2].sin(), pos_x[:, :, :, 1::2].cos()), dim=4
-        ).view(B, H, W, -1)
-        pos_y = torch.stack(
-            (pos_y[:, :, :, 0::2].sin(), pos_y[:, :, :, 1::2].cos()), dim=4
-        ).view(B, H, W, -1)
+        pos_x = torch.stack((pos_x[..., 0::2].sin(), pos_x[..., 1::2].cos()), dim=4)
+        pos_x = pos_x.view(B, H, W, -1)
+
+        pos_y = torch.stack((pos_y[..., 0::2].sin(), pos_y[..., 1::2].cos()), dim=4)
+        pos_y = pos_y.view(B, H, W, -1)
 
         pos = torch.cat((pos_y, pos_x), dim=3).permute(0, 3, 1, 2)  # (B, C, H, W)
 
@@ -137,10 +136,11 @@ class RelationSpatialEncondings(nn.Module):
         )  # (C / 4)
 
         pos = pos / dim_t  # (B, 4, C / 4)
-        pos[..., 0::2] = pos[..., 0::2].sin()
-        pos[..., 1::2] = pos[..., 1::2].cos()
 
-        return pos.view(pos.shape[0], -1)  # (B, C)
+        pos = torch.stack((pos[..., 0::2].sin(), pos[..., 1::2].cos()), dim=3)
+        pos = pos.view(pos.shape[0], -1)  # (B, C)
+
+        return pos
 
     def __call__(self, boxes1: BBoxes, boxes2: BBoxes) -> Float[Tensor, "B C"]:
         return super.__call__(boxes1, boxes2)  # type: ignore
@@ -171,10 +171,10 @@ class EntitySpatialEncodings(nn.Module):
         )  # (C / 4)
 
         pos = pos / dim_t  # (B, 4, C / 4)
-        pos[..., 0::2] = pos[..., 0::2].sin()
-        pos[..., 1::2] = pos[..., 1::2].cos()
+        pos = torch.stack((pos[..., 0::2].sin(), pos[:, :, 1::2].cos()), dim=3)
+        pos = pos.view(pos.shape[0], -1)  # (B, C)
 
-        return pos.view(pos.shape[0], -1)  # (B, C)
+        return pos
 
     def __call__(self, boxes: BBoxes) -> Float[Tensor, "B C"]:
         return super.__call__(boxes)  # type: ignore

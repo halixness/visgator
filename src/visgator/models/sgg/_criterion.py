@@ -62,12 +62,15 @@ class Criterion(_Criterion[ModelOutput]):
     ) -> dict[str, Float[Tensor, ""]]:
         B, N = output.mask.shape
 
-        tgt_boxes = target.tensor.unsqueeze(1)  # (B, 1, 4)
+        tgt_boxes = target.to_xyxy().normalize().tensor
+        out_boxes = output.boxes.to_xyxy().normalize().tensor
+
+        tgt_boxes = tgt_boxes.unsqueeze(1)  # (B, 1, 4)
         tgt_boxes = tgt_boxes.expand(-1, N, -1)  # (B, N, 4)
         tgt_boxes = tgt_boxes.flatten(0, 1)  # (BN, 4)
 
-        l1_loss = F.l1_loss(output.boxes.tensor, tgt_boxes, reduction="none")  # (BN)
-        giou = ops.generalized_box_iou_pairwise(output.boxes.tensor, tgt_boxes)  # (BN)
+        l1_loss = F.l1_loss(out_boxes, tgt_boxes, reduction="none")  # (BN)
+        giou = ops.generalized_box_iou_pairwise(out_boxes, tgt_boxes)  # (BN)
         giou_loss = -giou  # (BN)
 
         l1_loss = l1_loss.view(B, N)  # (B, N)
