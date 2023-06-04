@@ -11,7 +11,7 @@ from typing import Any
 import serde
 from typing_extensions import Self
 
-from .._config import Config as _Config
+from visgator.models import Config as _Config
 
 
 @serde.serde(type_check=serde.Strict)
@@ -138,6 +138,4 @@ class Config(_Config):
         return serde.from_dict(cls, cfg)
 
     def to_dict(self) -> dict[str, Any]:
-        cfg = serde.to_dict(self)
-        cfg["hidden_dim"] = self.encoders.hidden_dim
-        return cfg
+        return serde.to_dict(self)

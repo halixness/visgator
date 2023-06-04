@@ -39,6 +39,10 @@ class Dataset(_Dataset):
     ) -> Self:
         return cls(config, split, debug)
 
+    @property
+    def name(self) -> str:
+        return "RefCOCOg"
+
     def __len__(self) -> int:
         return len(self._samples)
 

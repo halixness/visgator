@@ -7,9 +7,9 @@ from typing import Any
 import torch
 from typing_extensions import Self
 
-from visgator.engines.trainer.optimizers import Optimizer
+from visgator.lr_schedulers import LRScheduler as _LRSchduler
+from visgator.optimizers import Optimizer
 
-from .._lr_scheduler import LRScheduler as _LRSchduler
 from ._config import Config
 
 
@@ -27,7 +27,11 @@ class LRScheduler(_LRSchduler):
 
     @classmethod
     def from_config(cls, config: Config, optimizer: Optimizer) -> Self:  # type: ignore
-        return super().from_config(config, optimizer)
+        return cls(config, optimizer)
+
+    @property
+    def name(self) -> str:
+        return self._scheduler.__class__.__name__
 
     def step_after_epoch(self) -> None:
         if not self._step_after_batch:

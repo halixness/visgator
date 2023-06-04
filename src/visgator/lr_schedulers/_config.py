@@ -2,6 +2,8 @@
 ##
 ##
 
+from __future__ import annotations
+
 import abc
 from typing import Any
 
@@ -11,8 +13,6 @@ from visgator.utils.misc import get_subclass, public_parent_module
 
 
 class Config(abc.ABC):
-    """Abstract base class for model configuration."""
-
     @classmethod
     def from_dict(cls, cfg: dict[str, Any]) -> Self:
         """Deserializes a dictionary into a Config object."""

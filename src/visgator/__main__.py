@@ -7,12 +7,14 @@ import json
 from pathlib import Path
 from typing import Any
 
-from .datasets import Config as DatasetConfig
-from .datasets import Generator
-from .engines.evaluator import Config as EvaluatorConfig
-from .engines.evaluator import Evaluator
-from .engines.trainer import Config as TrainerConfig
-from .engines.trainer import Trainer
+from ruamel.yaml import YAML
+
+from visgator.datasets import Config as DatasetConfig
+from visgator.datasets import Generator
+from visgator.engines.evaluator import Config as EvaluatorConfig
+from visgator.engines.evaluator import Evaluator
+from visgator.engines.trainer import Config as TrainerConfig
+from visgator.engines.trainer import Trainer
 
 
 def get_arg_parser() -> argparse.ArgumentParser:
@@ -35,6 +37,9 @@ def main() -> None:
         case ".json":
             with open(config_path, "r") as f:
                 cfg = json.load(f)
+        case ".yaml":
+            yaml = YAML(typ="safe")
+            cfg = yaml.load(config_path)
         case _:
             raise ValueError(f"Unknown config file extention: {extention}.")
 

@@ -12,7 +12,7 @@ from torch import nn
 
 from visgator.utils.batch import Batch
 from visgator.utils.bbox import BBoxes, BBoxFormat
-from visgator.utils.misc import Nested4DTensor
+from visgator.utils.torch import Nested4DTensor
 
 from ._config import DetectorConfig
 from ._misc import DetectionResults

@@ -20,7 +20,7 @@ from ._postprocessor import PostProcessor
 
 class Model(_Model[BBoxes]):
     def __init__(self, config: Config) -> None:
-        super().__init__(config)
+        super().__init__()
 
         self._postprocessor = PostProcessor()
 
@@ -33,6 +33,10 @@ class Model(_Model[BBoxes]):
     @classmethod
     def from_config(cls, config: Config) -> Self:  # type: ignore
         return cls(config)
+
+    @property
+    def name(self) -> str:
+        return "YOLOClip"
 
     @property
     def criterion(self) -> Optional[Criterion[BBoxes]]:

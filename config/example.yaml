@@ -1,0 +1,29 @@
+##
+##
+##
+
+wandb:
+  project: "test"
+  entity: "visgator"
+  save: false
+  enabled: true
+dataset:
+  module: ".refcocog"
+  path: "/path/to/refcocog"
+  split_provider: "umd"
+model:
+  module: ".baseline"
+compile: False
+num_epochs: 3
+batch_size: 32
+optimizer:
+  module: ".torch"
+  name: "AdamW"
+  args:
+    lr: 0.001
+lr_scheduler:
+  module: ".torch"
+  name: "StepLR"
+  args:
+    step_size: 1
+    gamma: 0.1

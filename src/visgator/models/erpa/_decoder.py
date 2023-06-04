@@ -7,7 +7,7 @@ from jaxtyping import Float
 from torch import Tensor, nn
 
 from visgator.utils.bbox import BBoxes
-from visgator.utils.misc import Nested4DTensor
+from visgator.utils.torch import Nested4DTensor
 
 from ._config import DecoderConfig
 from ._misc import NestedGraph

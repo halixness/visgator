@@ -19,7 +19,7 @@ from open_clip.transformer import VisionTransformer as OpenClipVisionTransformer
 from torch import LongTensor, Tensor, nn
 
 from visgator.utils.batch import Batch
-from visgator.utils.misc import Nested4DTensor
+from visgator.utils.torch import Nested4DTensor
 
 from ._config import EncodersConfig
 from ._misc import CaptionEmbeddings

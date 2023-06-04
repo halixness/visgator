@@ -2,13 +2,13 @@
 ##
 ##
 
-from dataclasses import dataclass, field
-from typing import Any
+from dataclasses import dataclass
+from typing import Any, Union
 
 import serde
 from typing_extensions import Self
 
-from .._config import Config as _Config
+from visgator.lr_schedulers import Config as _Config
 
 
 @serde.serde(type_check=serde.Strict)
@@ -17,8 +17,11 @@ class Config(_Config):
     """Configuration for PyTorch lr schedulers."""
 
     name: str
-    args: dict[str, Any] = field(default_factory=dict)
+    args: dict[str, Union[str, bool, int, float]] = serde.field(default_factory=dict)
 
     @classmethod
     def from_dict(cls, cfg: dict[str, Any]) -> Self:
         return serde.from_dict(cls, cfg)
+
+    def to_dict(self) -> dict[str, Any]:
+        return serde.to_dict(self)

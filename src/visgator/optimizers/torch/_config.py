@@ -2,24 +2,22 @@
 ##
 ##
 
-from __future__ import annotations
-
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Union
 
 import serde
 from typing_extensions import Self
 
-from visgator.models import Config as _Config
+from visgator.optimizers import Config as _Config
 
 
 @serde.serde(type_check=serde.Strict)
 @dataclass(frozen=True)
 class Config(_Config):
-    """Configuration for baseline model."""
+    """Configuration for PyTorch optimizers."""
 
-    model: str = "ViT-B-32"
-    pretrained: str = "laion2b_s34b_b79k"
+    name: str
+    args: dict[str, Union[str, bool, int, float]] = serde.field(default_factory=dict)
 
     @classmethod
     def from_dict(cls, cfg: dict[str, Any]) -> Self:

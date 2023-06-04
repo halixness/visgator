@@ -18,9 +18,8 @@ from visgator.metrics import GIoU, IoU, IoUAccuracy
 from visgator.models import Model, PostProcessor
 from visgator.utils.batch import Batch
 from visgator.utils.bbox import BBoxes
-from visgator.utils.device import Device
-from visgator.utils.logging import setup_logger
-from visgator.utils.misc import init_torch
+from visgator.utils.misc import setup_logger
+from visgator.utils.torch import Device, init_torch
 
 from ._config import Config
 
@@ -78,15 +77,15 @@ class Evaluator(Generic[_T]):
             collate_fn=Dataset.batchify,
         )
 
-        self._logger.info(f"Using dataset {self._config.dataset.name}:")
+        self._logger.info(f"Using {dataset.name} dataset:")
         self._logger.info(f"\tsize: {len(dataset)}")
         self._logger.info(f"\tbatch size: {1}")
 
     def _set_model(self) -> None:
-        self._logger.info(f"Using model {self._config.model.name}.")
-
         model: Model[_T] = Model.from_config(self._config.model)
         postprocessor = model.postprocessor
+
+        self._logger.info(f"Using {model.name} model.")
 
         model = model.to(self._device.to_torch())
         postprocessor = postprocessor.to(self._device.to_torch())

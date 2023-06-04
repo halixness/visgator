@@ -22,6 +22,8 @@ from ._postprocessor import PostProcessor
 
 class Model(_Model[BBoxes]):
     def __init__(self, config: Config) -> None:
+        super().__init__()
+
         self._criterion = Criterion(config.criterion)
         self._postprocessor = PostProcessor()
 
@@ -34,6 +36,10 @@ class Model(_Model[BBoxes]):
     @classmethod
     def from_config(cls, config: Config) -> Self:  # type: ignore
         return cls(config)
+
+    @property
+    def name(self) -> str:
+        return "ERPA"
 
     @property
     def criterion(self) -> Optional[Criterion]:

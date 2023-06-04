@@ -9,7 +9,7 @@ from typing_extensions import Self
 
 from visgator.utils.batch import Batch, BatchSample
 from visgator.utils.bbox import BBox, BBoxes
-from visgator.utils.factory import get_subclass
+from visgator.utils.misc import get_subclass
 
 from ._config import Config
 
@@ -28,10 +28,17 @@ class Split(enum.Enum):
 
 
 class Dataset(abc.ABC):
+    """Abstract base class for datasets."""
+
     @classmethod
     def from_config(cls, config: Config, split: Split, debug: bool = False) -> Self:
-        sub_cls = get_subclass(cls, config.name)
+        """Instantiates a dataset from a configuration."""
+        sub_cls = get_subclass(config.module, cls)
         return sub_cls.from_config(config, split, debug)
+
+    @abc.abstractproperty
+    def name(self) -> str:
+        """The name of the dataset."""
 
     @abc.abstractmethod
     def __getitem__(self, index: int) -> tuple[BatchSample, BBox]:

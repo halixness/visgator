@@ -29,14 +29,16 @@ class BBoxFormat(enum.Enum):
 class BBox:
     def __init__(
         self,
-        box: Union[Float[Tensor, "4"], tuple[float, float, float, float]],
+        box: Union[Float[Tensor, "4"], tuple[float, float, float, float], list[float]],
         image_size: Union[tuple[int, int], Int[Tensor, "2"], Size],
         format: BBoxFormat,
         normalized: bool,
     ) -> None:
-        if isinstance(box, tuple):
+        if isinstance(box, tuple) or isinstance(box, list):
             box = torch.tensor(box)
         self._box = box[None]  # (1, 4)
+        if self._box.shape[1] != 4:
+            raise ValueError(f"Expected 4 coordinates, got {self._box.shape[1]}.")
 
         if isinstance(image_size, tuple):
             image_size = torch.tensor(image_size, device=box.device)
@@ -165,7 +167,7 @@ class BBox:
     @property
     def tensor(self) -> Float[Tensor, "4"]:
         """Returns the bounding box as a tensor."""
-        return self._box
+        return self._box[0]
 
 
 # -----------------------------------------------------------------------------

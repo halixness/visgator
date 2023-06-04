@@ -10,7 +10,7 @@ from typing import Generic, Optional, TypeVar
 from torch import nn
 
 from visgator.utils.batch import Batch
-from visgator.utils.factory import get_subclass
+from visgator.utils.misc import get_subclass
 
 from ._config import Config
 from ._criterion import Criterion
@@ -20,12 +20,17 @@ _T = TypeVar("_T")
 
 
 class Model(nn.Module, Generic[_T], abc.ABC):
-    """Model interface."""
+    """Abstract base class for models."""
 
     @classmethod
     def from_config(cls, config: Config) -> Model[_T]:
-        sub_cls = get_subclass(cls, config.name)
+        """Instantiates a model from a configuration."""
+        sub_cls = get_subclass(config.module, cls)
         return sub_cls.from_config(config)
+
+    @abc.abstractproperty
+    def name(self) -> str:
+        """The name of the model."""
 
     @abc.abstractproperty
     def criterion(self) -> Optional[Criterion[_T]]:

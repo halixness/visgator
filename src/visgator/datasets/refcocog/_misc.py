@@ -17,7 +17,7 @@ from visgator.utils.batch import Caption
 from ._config import Config
 
 
-@serde.serde
+@serde.serde(type_check=serde.Strict)
 @dataclass(frozen=True)
 class Sample:
     path: Path

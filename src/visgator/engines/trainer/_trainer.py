@@ -20,18 +20,17 @@ from tqdm import tqdm
 from typing_extensions import Self
 
 from visgator.datasets import Dataset, Split
+from visgator.lr_schedulers import LRScheduler
 from visgator.metrics import GIoU, IoU, IoUAccuracy, LossTracker
 from visgator.models import Criterion, Model, PostProcessor
+from visgator.optimizers import Optimizer
 from visgator.utils.batch import Batch
 from visgator.utils.bbox import BBoxes
-from visgator.utils.device import Device
-from visgator.utils.logging import setup_logger
-from visgator.utils.misc import init_torch
+from visgator.utils.misc import setup_logger
+from visgator.utils.torch import Device, init_torch
 
-from ._checkpoint import Checkpoint
 from ._config import Config, Params
-from .lr_schedulers import LRScheduler
-from .optimizers import Optimizer
+from ._misc import Checkpoint
 
 _T = TypeVar("_T")
 
@@ -80,6 +79,7 @@ class Trainer(Generic[_T]):
 
                 now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
                 self._dir = self._config.dir / now
+                self._dir.mkdir(parents=True, exist_ok=False)
 
                 wandb.init(
                     project=args.project,
@@ -111,6 +111,7 @@ class Trainer(Generic[_T]):
                 # start a new run using wandb
                 now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
                 self._dir = self._config.dir / now
+                self._dir.mkdir(parents=True, exist_ok=False)
 
                 wandb.init(
                     project=args.project,
@@ -131,6 +132,8 @@ class Trainer(Generic[_T]):
             config_file = self._config.dir / "config.json"
             with open(config_file, "r") as f:
                 self._params = Params.from_dict(json.load(f))
+
+            wandb.init(mode="disabled")
         else:
             # start a new run locally
             self._resumed = False
@@ -138,6 +141,8 @@ class Trainer(Generic[_T]):
             self._dir = self._config.dir / now
             self._dir.mkdir(parents=True, exist_ok=False)
             self._params = Params.from_dict(self._config.params)
+
+            wandb.init(mode="disabled")
 
     def _set_device(self) -> None:
         if self._params.device is None:
@@ -152,7 +157,7 @@ class Trainer(Generic[_T]):
         if not self._resumed:
             return None
 
-        if self._config.wandb.enabled:
+        if wandb.run is not None:
             checkpoint_io = wandb.restore("checkpoint.tar")
             if checkpoint_io is None:
                 return None
@@ -212,17 +217,16 @@ class Trainer(Generic[_T]):
 
         iou = best_values["IoU"]
         self._logger.info(f"Saving model at epoch {epoch + 1}.")
-        model_dir = self._dir / f"best_model_epoch-{epoch}_iou-{iou}.pt"
+        model_dir = self._dir / f"{self._model.name}_epoch-{epoch}_iou-{iou}.pt"
         torch.save(self._model.state_dict(), model_dir)
 
-        if self._config.wandb.enabled:
+        if wandb.run is not None and self._config.wandb.args.save:  # type: ignore
             artifact = wandb.Artifact(
                 type="model",
-                name="best_model",
+                name=f"{self._model.name}",
                 metadata={"epoch": epoch, "iou": iou},
             )
             artifact.add_file(model_dir)
-            assert wandb.run is not None
             wandb.run.log_artifact(artifact)
 
     def _set_loaders(self) -> None:
@@ -267,10 +271,10 @@ class Trainer(Generic[_T]):
         )
 
         if not self._resumed:
-            self._logger.info(f"Using dataset {self._params.dataset.name}.")
+            self._logger.info(f"Using {train_dataset.name} dataset.")
             self._logger.info(
                 f"\t(train) size: {len(train_dataset)} | "
-                "(eval) size: {len(eval_dataset)}"
+                f"(eval) size: {len(eval_dataset)}"
             )
             self._logger.info(
                 f"\t(train) batch size: {self._params.batch_size} | "
@@ -282,21 +286,21 @@ class Trainer(Generic[_T]):
             )
 
     def _set_model(self, checkpoint: Optional[Checkpoint] = None) -> None:
-        if not self._resumed:
-            self._logger.info(f"Using model {self._params.model.name}.")
-
         model: Model[_T] = Model.from_config(self._params.model)
         criterion = model.criterion
         postprocessor = model.postprocessor
         if criterion is None:
             raise ValueError(
-                f"Model {self._params.model.name} cannot be trained "
+                f"Model {model.name} cannot be trained "
                 "since no criterion is defined."
             )
 
         model = model.to(self._device.to_torch())
         criterion = criterion.to(self._device.to_torch())
         postprocessor = postprocessor.to(self._device.to_torch())
+
+        if not self._resumed:
+            self._logger.info(f"Using {model.name} model.")
 
         if checkpoint is not None:
             model.load_state_dict(checkpoint.model)
@@ -316,13 +320,13 @@ class Trainer(Generic[_T]):
         self._postprocessor = postprocessor
 
     def _set_optimizer(self, checkpoint: Optional[Checkpoint] = None) -> None:
-        if not self._resumed:
-            self._logger.info(f"Using optimizer {self._params.optimizer.name}.")
-
         optimizer = Optimizer.from_config(
             self._params.optimizer,
             [param for param in self._model.parameters() if param.requires_grad],
         )
+
+        if not self._resumed:
+            self._logger.info(f"Using {optimizer.name} optimizer.")
 
         if checkpoint is not None:
             optimizer.load_state_dict(checkpoint.optimizer)
@@ -331,13 +335,12 @@ class Trainer(Generic[_T]):
         self._optimizer = optimizer
 
     def _set_lr_scheduler(self, checkpoint: Optional[Checkpoint] = None) -> None:
-        if not self._resumed:
-            self._logger.info(f"Using lr scheduler {self._params.lr_scheduler.name}.")
-
         lr_scheduler = LRScheduler.from_config(
-            self._params.lr_scheduler,
-            self._optimizer,
+            self._params.lr_scheduler, self._optimizer
         )
+
+        if not self._resumed:
+            self._logger.info(f"Using {lr_scheduler.name} lr scheduler.")
 
         if checkpoint is not None:
             lr_scheduler.load_state_dict(checkpoint.lr_scheduler)
@@ -374,9 +377,6 @@ class Trainer(Generic[_T]):
         em_tracker = tm.MetricTracker(metrics.clone(), maximize)  # type: ignore
         self._tm_tracker = tm_tracker.to(self._device.to_torch())
         self._em_tracker = em_tracker.to(self._device.to_torch())
-
-        if not self._config.wandb.enabled:
-            return
 
         assert wandb.run is not None
         wandb.run.define_metric("train/lr", summary="none")
@@ -581,10 +581,10 @@ class Trainer(Generic[_T]):
             self._logger.info(f"\t\t{key}: {value:.4f} | epoch: {epoch}")
 
     def run(self) -> None:
+        self._setup_launch()
         try:
-            self._setup_launch()
-            init_torch(self._params.seed, self._config.debug)
             self._logger = setup_logger(self._dir / "train.log", self._config.debug)
+            init_torch(self._params.seed, self._config.debug)
             self._save_config()
             self._set_device()
 

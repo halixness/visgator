@@ -11,7 +11,7 @@ from visgator.utils.misc import get_subclass, public_parent_module
 
 
 class Config(abc.ABC):
-    """Abstract base class for model configuration."""
+    """Abstract base class for optimizer configuration."""
 
     @classmethod
     def from_dict(cls, cfg: dict[str, Any]) -> Self:

@@ -9,8 +9,8 @@ from typing import Any
 
 from typing_extensions import Self
 
-from visgator.engines.trainer.optimizers import Optimizer
-from visgator.utils.factory import get_subclass
+from visgator.optimizers import Optimizer
+from visgator.utils.misc import get_subclass
 
 from ._config import Config
 
@@ -18,8 +18,13 @@ from ._config import Config
 class LRScheduler(abc.ABC):
     @classmethod
     def from_config(cls, config: Config, optimizer: Optimizer) -> Self:
-        sub_cls = get_subclass(cls, config.name)
+        """Instantiates a LRScheduler from a configuration."""
+        sub_cls = get_subclass(config.module, cls)
         return sub_cls.from_config(config, optimizer)
+
+    @abc.abstractproperty
+    def name(self) -> str:
+        """The name of the LRScheduler."""
 
     @abc.abstractmethod
     def step_after_epoch(self) -> None:

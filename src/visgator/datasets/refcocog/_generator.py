@@ -4,6 +4,7 @@
 
 import json
 
+from tqdm import tqdm
 from typing_extensions import Self
 
 from visgator.datasets import Generator as _Generator
@@ -36,7 +37,7 @@ class Generator(_Generator):
             split_output: list[dict] = []  # type: ignore
             output[str(split)] = split_output
 
-            for sample in samples:
+            for sample in tqdm(samples, desc=f"Generating {split} split"):
                 graph = parser.parse(sample.caption.sentence)
                 new_sample = {
                     "image": sample.path.name,
@@ -44,8 +45,6 @@ class Generator(_Generator):
                     "bbox": sample.bbox,
                 }
                 split_output.append(new_sample)
-                break
-            break
 
         output_path = (
             self._config.path / f"annotations/info_{self._config.split_provider}.json"

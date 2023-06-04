@@ -12,7 +12,7 @@ from typing import Any
 import serde
 from typing_extensions import Self
 
-from .._config import Config as _Config
+from visgator.datasets import Config as _Config
 
 
 class SplitProvider(enum.Enum):
@@ -38,3 +38,6 @@ class Config(_Config):
     @classmethod
     def from_dict(cls, cfg: dict[str, Any]) -> Self:
         return serde.from_dict(cls, cfg)
+
+    def to_dict(self) -> dict[str, Any]:
+        return serde.to_dict(self)

@@ -23,8 +23,8 @@ class Caption:
     sentence: str
     graph: Optional[SceneGraph] = serde.field(
         default=None,
-        serializer=SceneGraph.from_dict,
-        deserializer=SceneGraph.to_dict,
+        serializer=SceneGraph.to_dict,
+        deserializer=SceneGraph.from_dict,
     )
 
     def to_dict(self) -> dict[str, Any]:

@@ -6,7 +6,7 @@ import abc
 
 from typing_extensions import Self
 
-from visgator.utils.factory import get_subclass
+from visgator.utils.misc import get_subclass
 
 from ._config import Config
 
@@ -16,7 +16,8 @@ class Generator(abc.ABC):
 
     @classmethod
     def from_config(cls, config: Config) -> Self:
-        sub_cls = get_subclass(cls, config.name)
+        """Instantiates a generator from a configuration."""
+        sub_cls = get_subclass(config.module, cls)
         return sub_cls.from_config(config)
 
     @abc.abstractmethod

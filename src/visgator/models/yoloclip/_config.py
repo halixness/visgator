@@ -10,7 +10,7 @@ from dataclasses import dataclass
 import serde
 from typing_extensions import Self
 
-from .._config import Config as _Config
+from visgator.models import Config as _Config
 
 
 class YOLOModel(enum.Enum):
@@ -72,3 +72,6 @@ class Config(_Config):
     @classmethod
     def from_dict(cls, cfg: dict[str, str]) -> Self:
         return serde.from_dict(cls, cfg)
+
+    def to_dict(self) -> dict[str, str]:
+        return serde.to_dict(self)
