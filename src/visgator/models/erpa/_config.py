@@ -133,7 +133,6 @@ class CriterionConfig:
 class Config(_Config):
     """Configuration for SceneGraphGrounder model."""
 
-    hidden_dim: int
     encoders: EncodersConfig = serde.field(
         serializer=EncodersConfig.to_dict,
         deserializer=EncodersConfig.from_dict,
@@ -161,13 +160,9 @@ class Config(_Config):
         if hidden_dim is None:
             raise ValueError("hidden_dim must be provided.")
 
-        dropout = cfg.get("dropout", 0.1)
-
-        cfg["encoder"]["hidden_dim"] = hidden_dim
+        cfg["encoders"]["hidden_dim"] = hidden_dim
         cfg["decoder"]["hidden_dim"] = hidden_dim
         cfg["head"]["hidden_dim"] = hidden_dim
-        cfg["decoder"]["dropout"] = dropout
-        cfg["head"]["dropout"] = dropout
 
         return serde.from_dict(cls, cfg)
 

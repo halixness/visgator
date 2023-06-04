@@ -220,13 +220,15 @@ class Trainer(Generic[_T]):
         model_dir = self._dir / f"{self._model.name}_epoch-{epoch}_iou-{iou}.pt"
         torch.save(self._model.state_dict(), model_dir)
 
-        if wandb.run is not None and self._config.wandb.args.save:  # type: ignore
+        args = self._config.wandb.args
+        if args is not None and args.save:
             artifact = wandb.Artifact(
                 type="model",
                 name=f"{self._model.name}",
                 metadata={"epoch": epoch, "iou": iou},
             )
             artifact.add_file(model_dir)
+            assert wandb.run is not None
             wandb.run.log_artifact(artifact)
 
     def _set_loaders(self) -> None:
@@ -443,6 +445,7 @@ class Trainer(Generic[_T]):
         with counter as progress_bar:
             batch: Batch
             bboxes: BBoxes
+            device_type = "cuda" if self._device.is_cuda else "cpu"
             for idx, (batch, bboxes) in enumerate(self._train_loader):
                 # this is done since the batch size of the dataloader is equal to
                 # batch_size / gradient_accumulation_steps
@@ -454,7 +457,6 @@ class Trainer(Generic[_T]):
                 batch = batch.to(self._device.to_torch())
                 bboxes = bboxes.to(self._device.to_torch())
 
-                device_type = "cuda" if self._device.is_cuda else "cpu"
                 with autocast(device_type, enabled=self._params.mixed_precision):
                     outputs = self._model(batch)
                     tmp_losses = self._criterion(outputs, bboxes)
@@ -504,11 +506,11 @@ class Trainer(Generic[_T]):
 
         batch: Batch
         bboxes: BBoxes
+        device_type = "cuda" if self._device.is_cuda else "cpu"
         for batch, bboxes in tqdm(self._eval_loader, desc="Evaluating"):
             batch = batch.to(self._device.to_torch())
             bboxes = bboxes.to(self._device.to_torch())
 
-            device_type = "cuda" if self._device.is_cuda else "cpu"
             with autocast(device_type, enabled=self._params.mixed_precision):
                 outputs = self._model(batch)
                 tmp_losses = self._criterion(outputs, bboxes)

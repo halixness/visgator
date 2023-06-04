@@ -31,13 +31,13 @@ class Model(_Model[ModelOutput]):
         self._detector = Detector(config.detector)
         self._vision, self._text = build_encoders(config.encoders)
         self._decoder = Decoder(config.decoder)
-        self._same_entity_edge = nn.Parameter(torch.randn(1, config.hidden_dim))
+        self._same_entity_edge = nn.Parameter(torch.randn(1, config.decoder.hidden_dim))
 
         self._regression_head = nn.Sequential(
-            nn.Linear(config.hidden_dim, config.hidden_dim),
+            nn.Linear(config.head.hidden_dim, config.head.hidden_dim),
             nn.ReLU(),
-            nn.Dropout(config.dropout),
-            nn.Linear(config.hidden_dim, 4),
+            nn.Dropout(config.head.dropout),
+            nn.Linear(config.head.hidden_dim, 4),
         )
 
     @classmethod
