@@ -325,7 +325,7 @@ def build_encoders(config: EncodersConfig) -> tuple[VisionEncoder, TextEncoder]:
             std = transform.std
             break
 
-    vision = VisionEncoder(model, config.hidden_dim, mean, std)
+    vision = VisionEncoder(model.visual, config.hidden_dim, mean, std)
     text = TextEncoder(model, tokenizer, config.hidden_dim)
 
     return vision, text

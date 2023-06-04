@@ -51,7 +51,6 @@ class WandbConfig:
     args: Optional[WandbRunArgs] = serde.field(
         serializer=WandbRunArgs.to_dict,
         deserializer=WandbRunArgs.from_dict,
-        flatten=True,  # type: ignore
     )
     enabled: bool = True
 
@@ -68,7 +67,10 @@ class WandbConfig:
 
     def to_dict(self) -> dict[str, Any]:
         """Serializes a WandbConfig object into a dictionary."""
-        return serde.to_dict(self)
+        if self.args is None:
+            return {"enabled": self.enabled}
+        else:
+            return {"enabled": self.enabled, **self.args.to_dict()}
 
 
 # ---------------------------------------------------------------------------

@@ -83,6 +83,26 @@ class DecoderConfig:
 
 @serde.serde(type_check=serde.Strict)
 @dataclass(frozen=True)
+class RegressionHeadConfig:
+    """Configuration for regression head."""
+
+    hidden_dim: int = serde.field(skip=True)
+    dropout: float = 0.1
+
+    def __post_init__(self) -> None:
+        if self.dropout < 0 or self.dropout > 1:
+            raise ValueError("dropout must be between 0 and 1.")
+
+    @classmethod
+    def from_dict(cls, cfg: dict[str, Any]) -> Self:
+        return serde.from_dict(cls, cfg)
+
+    def to_dict(self) -> dict[str, Any]:
+        return serde.to_dict(self)
+
+
+@serde.serde(type_check=serde.Strict)
+@dataclass(frozen=True)
 class CriterionConfig:
     """Configuration for criterion."""
 
@@ -104,8 +124,6 @@ class CriterionConfig:
 class Config(_Config):
     """Configuration for SceneGraphGrounder model."""
 
-    hidden_dim: int
-    dropout: float = 0.1
     encoders: EncodersConfig = serde.field(
         serializer=EncodersConfig.to_dict,
         deserializer=EncodersConfig.from_dict,
@@ -118,6 +136,10 @@ class Config(_Config):
         serializer=DecoderConfig.to_dict,
         deserializer=DecoderConfig.from_dict,
     )
+    head: RegressionHeadConfig = serde.field(
+        serializer=RegressionHeadConfig.to_dict,
+        deserializer=RegressionHeadConfig.from_dict,
+    )
     criterion: CriterionConfig = serde.field(
         serializer=CriterionConfig.to_dict,
         deserializer=CriterionConfig.from_dict,
@@ -129,11 +151,9 @@ class Config(_Config):
         if hidden_dim is None:
             raise ValueError("hidden_dim must be provided.")
 
-        dropout = cfg.get("dropout", 0.1)
-
-        cfg["encoder"]["hidden_dim"] = hidden_dim
+        cfg["encoders"]["hidden_dim"] = hidden_dim
         cfg["decoder"]["hidden_dim"] = hidden_dim
-        cfg["decoder"]["dropout"] = dropout
+        cfg["head"]["hidden_dim"] = hidden_dim
 
         return serde.from_dict(cls, cfg)
 

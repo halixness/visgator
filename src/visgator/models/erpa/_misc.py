@@ -50,6 +50,9 @@ class Graph:
         for idx, detection in enumerate(detections.entities):
             entity: int = detection.item()
             for connection in graph.connections(entity):
+                if connection.end < entity:
+                    continue
+
                 tmp = (detections.entities == connection.end).nonzero(as_tuple=True)[0]
                 indexes = torch.cat(
                     [torch.tensor([idx])[None].expand(1, len(tmp)), tmp[None]],
