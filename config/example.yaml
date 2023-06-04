@@ -9,10 +9,36 @@ wandb:
   enabled: true
 dataset:
   module: ".refcocog"
-  path: "/path/to/refcocog"
+  path: "../refcocog"
   split_provider: "umd"
+encoder:
+  hidden_dim: 256
+head:
+  hidden_dim: 256
+decoder:
+  dropout: 0.1
 model:
-  module: ".baseline"
+  module: ".erpa"
+  hidden_dim: 256
+  dropout: 0.1 # default
+  encoders:
+    model: "ViT-B-32" # default
+    pretrained: "laion2b_s34b_b79k" # default
+  detector:
+    weights: "../GroundingDINO/weights/weights.pt"
+    config: "../GroundingDINO/groundingdino/config/GroundingDINO_SwinT_OGC.py"
+    box_threshold: 0.35 # default
+    text_threshold: 0.25 # default
+  decoder:
+    num_layers: 3
+    num_heads: 8 # default
+    epsilon_layer_scale: 0.1 # default
+  head:
+    num_layers: 2
+    num_heads: 8 # default
+  criterion:
+    l1_weight: 1.0 # default
+    giou_weight: 1.0 # default
 compile: False
 num_epochs: 3
 batch_size: 32
