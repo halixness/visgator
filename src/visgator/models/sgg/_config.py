@@ -143,6 +143,7 @@ class Config(_Config):
     criterion: CriterionConfig = serde.field(
         serializer=CriterionConfig.to_dict,
         deserializer=CriterionConfig.from_dict,
+        default=CriterionConfig(),
     )
 
     @classmethod
@@ -151,9 +152,13 @@ class Config(_Config):
         if hidden_dim is None:
             raise ValueError("hidden_dim must be provided.")
 
-        cfg["encoders"]["hidden_dim"] = hidden_dim
-        cfg["decoder"]["hidden_dim"] = hidden_dim
-        cfg["head"]["hidden_dim"] = hidden_dim
+        encoders = cfg.setdefault("encoders", {})
+        decoder = cfg.setdefault("decoder", {})
+        head = cfg.setdefault("head", {})
+
+        encoders["hidden_dim"] = hidden_dim
+        decoder["hidden_dim"] = hidden_dim
+        head["hidden_dim"] = hidden_dim
 
         return serde.from_dict(cls, cfg)
 

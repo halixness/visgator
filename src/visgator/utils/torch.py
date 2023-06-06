@@ -4,10 +4,11 @@
 
 import enum
 import os
+import random
 from typing import Optional
 
 import torch
-from jaxtyping import Bool, Float
+from jaxtyping import Bool, Num
 from torch import Tensor
 from typing_extensions import Self
 
@@ -15,6 +16,7 @@ from typing_extensions import Self
 def init_torch(seed: int, debug: bool) -> None:
     """Initializes torch with the specified seed and debug mode."""
     torch.set_default_dtype(torch.float32)
+    random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
     torch.backends.cudnn.enabled = True
@@ -102,7 +104,7 @@ class Nested3DTensor:
 
     def __init__(
         self,
-        tensor: Float[Tensor, "N L D"],
+        tensor: Num[Tensor, "N L D"],
         sizes: list[int],
         mask: Optional[Bool[Tensor, "N L"]] = None,
     ) -> None:
@@ -116,7 +118,7 @@ class Nested3DTensor:
     @classmethod
     def from_tensors(
         cls,
-        tensors: list[Float[Tensor, "L D"]],
+        tensors: list[Num[Tensor, "L D"]],
         pad_value: float = 0.0,
     ) -> Self:
         """Returns a Nested3DTensor from a list of 2D tensors."""
@@ -130,7 +132,7 @@ class Nested3DTensor:
         return cls(tensor, sizes)
 
     @property
-    def tensor(self) -> Float[Tensor, "N L D"]:
+    def tensor(self) -> Num[Tensor, "N L D"]:
         """Returns the tensor with padding."""
         return self._tensor
 
@@ -171,7 +173,7 @@ class Nested3DTensor:
             self._mask.to(device) if self._mask is not None else None,
         )
 
-    def to_list(self) -> list[Float[Tensor, "L D"]]:
+    def to_list(self) -> list[Num[Tensor, "L D"]]:
         """Returns a list of 2D tensors without padding."""
         return [self._tensor[i, :length] for i, length in enumerate(self._sizes)]
 
@@ -184,7 +186,7 @@ class Nested4DTensor:
 
     def __init__(
         self,
-        tensor: Float[Tensor, "N C H W"],
+        tensor: Num[Tensor, "N C H W"],
         sizes: list[tuple[int, int]],
         mask: Optional[Bool[Tensor, "N H W"]] = None,
     ) -> None:
@@ -198,7 +200,7 @@ class Nested4DTensor:
     @classmethod
     def from_tensors(
         cls,
-        tensors: list[Float[Tensor, "C H W"]],
+        tensors: list[Num[Tensor, "C H W"]],
         pad_value: float = 0.0,
     ) -> Self:
         """Returns a Nested4DTensor from a list of 3D tensors."""
@@ -217,7 +219,7 @@ class Nested4DTensor:
         return cls(tensor, sizes)
 
     @property
-    def tensor(self) -> Float[Tensor, "N C H W"]:
+    def tensor(self) -> Num[Tensor, "N C H W"]:
         """Returns the tensor with padding."""
         return self._tensor
 
@@ -258,7 +260,7 @@ class Nested4DTensor:
             self._mask.to(device) if self._mask is not None else None,
         )
 
-    def to_list(self) -> list[Float[Tensor, "C H W"]]:
+    def to_list(self) -> list[Num[Tensor, "C H W"]]:
         """Returns a list of 3D tensors without padding."""
         return [
             self._tensor[i, :, :height, :width]

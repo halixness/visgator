@@ -372,7 +372,8 @@ class Trainer(Generic[_T]):
                 "Accuracy@50": IoUAccuracy(0.5),
                 "Accuracy@75": IoUAccuracy(0.75),
                 "Accuracy@90": IoUAccuracy(0.9),
-            }
+            },
+            compute_groups=False,
         )
         maximize = [metric.higher_is_better for metric in metrics.values()]
         tm_tracker = tm.MetricTracker(metrics, maximize)  # type: ignore
@@ -430,6 +431,9 @@ class Trainer(Generic[_T]):
         start = timer()
 
         self._model.train()
+        self._postprocessor.train()
+        self._criterion.train()
+
         self._tl_tracker.increment()
         self._tm_tracker.increment()
         self._optimizer.zero_grad()
@@ -501,6 +505,9 @@ class Trainer(Generic[_T]):
         start = timer()
 
         self._model.eval()
+        self._postprocessor.eval()
+        self._criterion.eval()
+
         self._el_tracker.increment()
         self._em_tracker.increment()
 
@@ -521,6 +528,7 @@ class Trainer(Generic[_T]):
                 pred_bboxes.to_xyxy().normalize().tensor,
                 bboxes.to_xyxy().normalize().tensor,
             )
+            # print(self._em_tracker.compute())
 
         end = timer()
         elapsed = end - start

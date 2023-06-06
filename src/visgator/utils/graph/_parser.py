@@ -4,7 +4,6 @@
 
 from typing import Protocol
 
-import openai
 import sng_parser
 
 from ._graph import Entity, Relation, SceneGraph
@@ -25,9 +24,6 @@ class _SceneGraphParser(Protocol):
 
 class GPTSceneGraphParser(_SceneGraphParser):
     """A parser that uses GPT."""
-
-    def __init__(self, api_key: str) -> None:
-        openai.api_key = api_key
 
     def _create_prompt(self, sentence: str) -> str:
         return f"""

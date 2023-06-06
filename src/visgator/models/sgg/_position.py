@@ -49,7 +49,7 @@ class PatchSpatialEncodings(nn.Module):
         return pos
 
     def __call__(self, mask: Bool[Tensor, "B H W"]) -> Float[Tensor, "B C H W"]:
-        return super.__call__(mask)  # type: ignore
+        return super().__call__(mask)  # type: ignore
 
 
 class GaussianHeatmaps(nn.Module):
@@ -85,7 +85,7 @@ class GaussianHeatmaps(nn.Module):
         return heatmaps
 
     def __call__(self, boxes: BBoxes, size: tuple[int, int]) -> Float[Tensor, "B HW"]:
-        return super.__call__(boxes, size)  # type: ignore
+        return super().__call__(boxes, size)  # type: ignore
 
 
 class RelationSpatialEncondings(nn.Module):
@@ -116,13 +116,12 @@ class RelationSpatialEncondings(nn.Module):
         center2 = cxcywh2.tensor[:, :2]  # (B, 2)
 
         iou, union = ops.box_iou_pairwise(xyxy1.tensor, xyxy2.tensor)  # (B,)
-        iou = iou[None]  # (B, 1)
-        union = union[None]  # (B, 1)
+        iou = iou.unsqueeze(-1)  # (B, 1)
+        union = union.unsqueeze(-1)  # (B, 1)
 
-        distancex = (center1[:, 0] - center2[:, 0])[None]  # (B, 1)
-        distancey = (center1[:, 1] - center2[:, 1])[None]  # (B, 1)
+        distance = center1 - center2  # (B, 2)
 
-        pos = torch.cat((distancex, distancey, union, iou))  # (B, 4)
+        pos = torch.cat((distance, union, iou), dim=1)  # (B, 4)
         pos = pos.unsqueeze(-1)  # (B, 4, 1)
 
         # transform this vector into a sinuoidal encoding
@@ -143,7 +142,7 @@ class RelationSpatialEncondings(nn.Module):
         return pos
 
     def __call__(self, boxes1: BBoxes, boxes2: BBoxes) -> Float[Tensor, "B C"]:
-        return super.__call__(boxes1, boxes2)  # type: ignore
+        return super().__call__(boxes1, boxes2)  # type: ignore
 
 
 class EntitySpatialEncodings(nn.Module):
@@ -177,4 +176,4 @@ class EntitySpatialEncodings(nn.Module):
         return pos
 
     def __call__(self, boxes: BBoxes) -> Float[Tensor, "B C"]:
-        return super.__call__(boxes)  # type: ignore
+        return super().__call__(boxes)  # type: ignore

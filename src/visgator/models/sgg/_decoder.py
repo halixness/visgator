@@ -54,8 +54,8 @@ class Decoder(nn.Module):
         union_heatmaps = self._gaussian_heatmaps(union_boxes, (H, W))
         heatmaps1 = heatmaps[edge_index[0]]  # (BE HW)
         heatmaps2 = heatmaps[edge_index[1]]  # (BE HW)
-        edge_heatmaps = torch.max(
-            torch.max(heatmaps1, heatmaps2),
+        edge_heatmaps = torch.maximum(
+            torch.maximum(heatmaps1, heatmaps2),
             union_heatmaps,
         )  # (BE HW)
 
@@ -170,11 +170,12 @@ class ModifiedGAT(nn.Module):
         super().__init__()
 
         self._num_heads = config.num_heads
+        head_dim = config.hidden_dim // config.num_heads
 
         self._first_node_proj = nn.Linear(config.hidden_dim, config.hidden_dim)
         self._second_node_proj = nn.Linear(config.hidden_dim, config.hidden_dim)
         self._edge_proj = nn.Linear(config.hidden_dim, config.hidden_dim)
-        self._attn_proj = nn.Linear(config.hidden_dim, 1)
+        self._attn_proj = nn.Parameter(torch.randn(1, config.num_heads, head_dim))
 
         self._edge_out_proj = nn.Linear(config.hidden_dim, config.hidden_dim)
         self._node_out_proj = nn.Linear(config.hidden_dim, config.hidden_dim)
@@ -192,34 +193,35 @@ class ModifiedGAT(nn.Module):
         edge_index = graph.edge_index(False)  # (2 BE)
 
         BN, _ = nodes.shape
+        BE, _ = edges.shape
         H = self._num_heads
 
         nodes = nodes + node_encondings  # (BN D)
         edges = edges + edge_encodings  # (BE D)
 
-        first_nodes = self._first_node_proj(nodes).view(BN, H, -1)  # (BN H D/H)
-        second_nodes = self._second_node_proj(nodes).view(BN, H, -1)  # (BN H D/H)
-        edges = self._edge_proj(edges).view(BN, H, -1)  # (BE H D/H)
+        first_nodes = self._first_node_proj(nodes)[edge_index[0]]  # (BE D)
+        second_nodes = self._second_node_proj(nodes)[edge_index[0]]  # (BE D)
+        edges = self._edge_proj(edges)  # (BE D)
 
-        first_nodes = first_nodes[edge_index[0]]  # (BE H D/H)
-        second_nodes = second_nodes[edge_index[1]]  # (BE H D/H)
+        hidden = first_nodes + second_nodes + edges  # (BE D)
+        hidden = F.gelu(hidden)  # (BE D)
 
-        tmp = first_nodes + second_nodes + edges  # (BE H D/H)
-        tmp = F.gelu(tmp)  # (BE H D/H)
-
-        presoftmax_alpha = self._attn_proj(tmp).squeeze(-1)  # (BE H)
+        hidden_head = hidden.view(BE, H, -1)  # (BE H D/H)
+        presoftmax_alpha = (hidden_head * self._attn_proj).sum(dim=-1)  # (BE H)
         exp_alpha = torch.exp(presoftmax_alpha)  # (BE H)
         alpha_sum = scatter_add(exp_alpha, edge_index[0], dim=0)  # (BN H)
         alpha = exp_alpha / alpha_sum[edge_index[0]]  # (BE H)
         alpha = self._dropout(alpha)  # (BE H)
 
-        new_edges = self._edge_out_proj(tmp)  # (BE H D/H)
-        values = second_nodes + new_edges  # (BE H D/H)
-        values = self._node_out_proj(values)  # (BE H D/H)
+        new_edges = self._edge_out_proj(hidden)  # (BE D)
+        values = nodes[edge_index[1]] + new_edges  # (BE D)
+        values = self._node_out_proj(values)  # (BE D)
+        values = values.view(BE, H, -1)  # (BE H D/H)
         values = alpha.unsqueeze(-1) * values  # (BE H D/H)
         new_nodes = scatter_add(values, edge_index[0], dim=0)  # (BN H D/H)
+        new_nodes = new_nodes.view(BN, -1)  # (BN D)
 
-        return graph.new_like(new_nodes.view(BN, -1), new_edges.view(BN, -1))
+        return graph.new_like(new_nodes, new_edges)
 
 
 # taken from https://github.com/mlfoundations/open_clip/blob/main/src/open_clip/transformer.py

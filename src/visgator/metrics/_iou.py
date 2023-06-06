@@ -54,7 +54,8 @@ class IoUAccuracy(tm.Metric):
 
     def __init__(self, threshold: float = 0.5) -> None:
         super().__init__()
-        self.threshold = threshold
+
+        self.register_buffer("threshold", torch.tensor(threshold))
         self.add_state("value", default=torch.tensor(0), dist_reduce_fx="sum")
         self.add_state("total", default=torch.tensor(0), dist_reduce_fx="sum")
 

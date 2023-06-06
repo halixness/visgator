@@ -205,11 +205,28 @@ class BBoxes:
                 .expand(len(boxes), 2)
             )
         elif images_size.ndim == 1:
-            images_size = images_size.unsqueeze(0).expand(len(boxes), 2)
+            images_size = images_size.unsqueeze(0).expand(len(boxes), -1)
         self._images_size = images_size
 
         self._format = format
         self._normalized = normalized
+
+    @classmethod
+    def from_bboxes(cls, bboxes: list[BBox]) -> Self:
+        """Creates a collection of bounding boxes from a list of bounding boxes."""
+        format = bboxes[0].format
+        normalized = bboxes[0].normalized
+
+        if any(bbox.format != format for bbox in bboxes):
+            raise ValueError("All bounding boxes must have the same format.")
+
+        if any(bbox.normalized != normalized for bbox in bboxes):
+            raise ValueError("All bounding boxes must have the same normalization.")
+
+        boxes = torch.stack([bbox.tensor for bbox in bboxes], dim=0)
+        images_size = torch.tensor([bbox.image_size for bbox in bboxes])
+
+        return cls(boxes, images_size, format, normalized)
 
     @property
     def device(self) -> torch.device:
@@ -235,23 +252,6 @@ class BBoxes:
     def tensor(self) -> Float[Tensor, "N 4"]:
         """Returns the bounding boxes as a tensor."""
         return self._boxes
-
-    @classmethod
-    def from_bboxes(cls, bboxes: list[BBox]) -> Self:
-        """Creates a collection of bounding boxes from a list of bounding boxes."""
-        format = bboxes[0].format
-        normalized = bboxes[0].normalized
-
-        if any(bbox.format != format for bbox in bboxes):
-            raise ValueError("All bounding boxes must have the same format.")
-
-        if any(bbox.normalized != normalized for bbox in bboxes):
-            raise ValueError("All bounding boxes must have the same normalization.")
-
-        boxes = torch.stack([bbox.tensor for bbox in bboxes], dim=0)
-        images_size = [bbox.image_size for bbox in bboxes]
-
-        return cls(boxes, images_size, format, normalized)
 
     def to_xyxy(self) -> Self:
         """Converts the bounding boxes to the format (x1, y1, x2, y2)."""
@@ -362,7 +362,7 @@ class BBoxes:
     def union(self, other: Self) -> Self:
         """Returns the union of the bounding boxes."""
 
-        if self._images_size != other._images_size:
+        if torch.any(self._images_size != other._images_size):
             raise ValueError("Bounding boxes must have the same image size.")
 
         if len(self) != len(other):

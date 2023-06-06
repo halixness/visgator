@@ -61,8 +61,6 @@ class Graph:
                 edge_index_list.append(indexes)
                 edge_rel_index_list.extend([connection.relation] * len(tmp))
 
-        edge_index = torch.cat(edge_index_list, dim=1)  # 2, M
-
         same_entity_edge_index_list = []
         num_relations = embeddings.relations.shape[0]
         for idx, detection in enumerate(detections.entities):
@@ -71,14 +69,22 @@ class Graph:
             # tmp = tmp[tmp != idx] remove this comment if you want to remove self loops
 
             indexes = torch.cat(
-                [torch.tensor([idx])[None].expand(1, len(tmp)), tmp[None]],
+                [
+                    torch.tensor([idx], device=tmp.device)[None].expand(1, len(tmp)),
+                    tmp[None],
+                ],
                 dim=0,
             )
             same_entity_edge_index_list.append(indexes)
             edge_rel_index_list.extend([num_relations] * len(tmp))
 
         same_entity_edge_index = torch.cat(same_entity_edge_index_list, dim=1)
-        edge_index = torch.cat([edge_index, same_entity_edge_index], dim=1)
+
+        if len(edge_index_list) > 0:
+            edge_index = torch.cat(edge_index_list, dim=1)  # 2, M
+            edge_index = torch.cat([edge_index, same_entity_edge_index], dim=1)
+        else:
+            edge_index = same_entity_edge_index
 
         relations_embeddings = torch.cat([embeddings.relations, same_entity_edge])
         edge_rel_index = torch.tensor(edge_rel_index_list)  # M

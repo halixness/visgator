@@ -69,9 +69,9 @@ class Criterion(_Criterion[ModelOutput]):
         tgt_boxes = tgt_boxes.expand(-1, N, -1)  # (B, N, 4)
         tgt_boxes = tgt_boxes.flatten(0, 1)  # (BN, 4)
 
-        l1_loss = F.l1_loss(out_boxes, tgt_boxes, reduction="none")  # (BN)
-        giou = ops.generalized_box_iou_pairwise(out_boxes, tgt_boxes)  # (BN)
-        giou_loss = -giou  # (BN)
+        l1_loss = torch.cdist(out_boxes, tgt_boxes, p=1).diagonal()  # (BN,)
+        giou = ops.generalized_box_iou_pairwise(out_boxes, tgt_boxes)  # (BN,)
+        giou_loss = -giou  # (BN,)
 
         l1_loss = l1_loss.view(B, N)  # (B, N)
         giou_loss = giou_loss.view(B, N)  # (B, N)
@@ -80,7 +80,7 @@ class Criterion(_Criterion[ModelOutput]):
             self._l1_weight * l1_loss + self._giou_weight * giou_loss
         )  # (B, N)
         matching_loss.masked_fill_(output.mask, torch.inf)  # (B, N)
-        idx = torch.min(matching_loss, dim=1)[1]  # (B,) (B,)
+        idx = torch.min(matching_loss, dim=1)[1]  # (B,)
 
         mask = output.mask.clone()  # (B, N)
         mask[torch.arange(B), idx] = True  # (B, N)
@@ -98,5 +98,5 @@ class Criterion(_Criterion[ModelOutput]):
         return {
             "L1": l1_loss,
             "GIoU": giou_loss,
-            "InfoNCE": info_nce_loss.mean(),
+            "InfoNCE": info_nce_loss,
         }
