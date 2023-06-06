@@ -4,7 +4,7 @@
 
 from typing import Any
 
-import torch
+import torch.optim.lr_scheduler as lrs
 from typing_extensions import Self
 
 from visgator.lr_schedulers import LRScheduler as _LRSchduler
@@ -14,20 +14,31 @@ from ._config import Config
 
 
 class LRScheduler(_LRSchduler):
-    def __init__(self, config: Config, optimizer: Optimizer) -> None:
-        cls = getattr(torch.optim.lr_scheduler, config.name)
-        self._scheduler: torch.optim.lr_scheduler.LRScheduler = cls(
-            optimizer, **config.args
-        )
-
+    def __init__(
+        self,
+        config: Config,
+        optimizer: Optimizer,
+        num_epochs: int,
+        steps_per_epoch: int,
+    ) -> None:
+        cls = getattr(lrs, config.name)
+        self._step_after_batch = False
         if config.name == "OneCycleLR":
+            config.args["total_steps"] = num_epochs * steps_per_epoch
             self._step_after_batch = True
-        else:
-            self._step_after_batch = False
+
+        self._scheduler: lrs.LRScheduler = cls(optimizer, **config.args)
+        self._steps_per_epoch = steps_per_epoch
 
     @classmethod
-    def from_config(cls, config: Config, optimizer: Optimizer) -> Self:  # type: ignore
-        return cls(config, optimizer)
+    def from_config(
+        cls,
+        config: Config,  # type: ignore
+        optimizer: Optimizer,
+        num_epochs: int,
+        steps_per_epoch: int,
+    ) -> Self:
+        return cls(config, optimizer, num_epochs, steps_per_epoch)
 
     @property
     def name(self) -> str:
@@ -49,4 +60,9 @@ class LRScheduler(_LRSchduler):
         return self._scheduler.state_dict()
 
     def load_state_dict(self, state_dict: dict[str, Any]) -> None:
+        if self.name == "OneCycleLR":
+            last_epoch = state_dict["last_epoch"]
+            epoch = last_epoch // self._steps_per_epoch
+            state_dict["last_epoch"] = epoch * self._steps_per_epoch
+
         self._scheduler.load_state_dict(state_dict)

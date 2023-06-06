@@ -287,6 +287,9 @@ class Trainer(Generic[_T]):
                 f"{self._params.gradient_accumulation_steps}"
             )
 
+    def _get_steps_per_epoch(self) -> int:
+        return len(self._train_loader) // self._params.batch_size
+
     def _set_model(self, checkpoint: Optional[Checkpoint] = None) -> None:
         model: Model[_T] = Model.from_config(self._params.model)
         criterion = model.criterion
@@ -338,7 +341,10 @@ class Trainer(Generic[_T]):
 
     def _set_lr_scheduler(self, checkpoint: Optional[Checkpoint] = None) -> None:
         lr_scheduler = LRScheduler.from_config(
-            self._params.lr_scheduler, self._optimizer
+            self._params.lr_scheduler,
+            self._optimizer,
+            self._params.num_epochs,
+            self._get_steps_per_epoch(),
         )
 
         if not self._resumed:
@@ -438,12 +444,9 @@ class Trainer(Generic[_T]):
         self._tm_tracker.increment()
         self._optimizer.zero_grad()
 
-        num_batches = (
-            len(self._train_loader.dataset) // self._params.batch_size  # type: ignore
-        )
         counter = tqdm(
             desc="Training",
-            total=num_batches * self._params.batch_size,
+            total=self._get_steps_per_epoch() * self._params.batch_size,
         )
 
         with counter as progress_bar:
@@ -451,10 +454,12 @@ class Trainer(Generic[_T]):
             bboxes: BBoxes
             device_type = "cuda" if self._device.is_cuda else "cpu"
             for idx, (batch, bboxes) in enumerate(self._train_loader):
-                # this is done since the batch size of the dataloader is equal to
-                # batch_size / gradient_accumulation_steps
-                # thus the samples belonging to the last non complete batch
-                # will not be used for training, so we stop earlier
+                # since the dataloader batch size is equal to true batch size
+                # // gradient accumulation steps, the last samples in the dataloader
+                # may not be enough to fill the true batch size, so we break the loop
+                # for example, if the true batch size is 8, the gradient accumulation
+                # steps is 4 and the dataset size is 50, the last 2 samples will be
+                # ignored
                 if progress_bar.total == progress_bar.n:
                     break
 
