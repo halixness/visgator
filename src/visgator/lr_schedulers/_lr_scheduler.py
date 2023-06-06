@@ -17,10 +17,16 @@ from ._config import Config
 
 class LRScheduler(abc.ABC):
     @classmethod
-    def from_config(cls, config: Config, optimizer: Optimizer) -> Self:
+    def from_config(
+        cls,
+        config: Config,
+        optimizer: Optimizer,
+        num_epoch: int,
+        steps_per_epoch: int,
+    ) -> Self:
         """Instantiates a LRScheduler from a configuration."""
         sub_cls = get_subclass(config.module, cls)
-        return sub_cls.from_config(config, optimizer)
+        return sub_cls.from_config(config, optimizer, num_epoch, steps_per_epoch)
 
     @abc.abstractproperty
     def name(self) -> str:
