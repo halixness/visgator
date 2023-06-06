@@ -25,7 +25,7 @@ model:
     model: "ViT-B-32" # default
     pretrained: "laion2b_s34b_b79k" # default
   detector:
-    weights: "../GroundingDINO/weights/weights.pt"
+    weights: "../GroundingDINO/weights/weights.pth"
     config: "../GroundingDINO/groundingdino/config/GroundingDINO_SwinT_OGC.py"
     box_threshold: 0.35 # default
     text_threshold: 0.25 # default

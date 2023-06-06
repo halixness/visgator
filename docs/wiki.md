@@ -1,6 +1,14 @@
 # Visgator
 Referring expressions visual grounding wih scene graphs and object detection.
 
+## Setup
+```
+cd visgator && pip install -e .
+python -m visgator --phase generate --config config/example.yaml
+python -m visgator --phase train --config config/example.yaml
+python -m visgator --phase eval --config config/example.yaml
+```
+
 ## Architecture
 ![visgator architecture](src/architecture.png)
 
@@ -67,5 +75,6 @@ Finally, a `NestedGraph` object is passed to the ERP-Decoder, along with the for
 In each ERP, a gaussian heatmap is computed for each entity bounding box. The union of the heatmaps constitutes the mask for the input image (`visgator.models.erpa.Decoder.forward()`). A stack of attention layers processes the ERPs so that the visual tokens attend the text embeddings, eventually re-arranged in nodes and edges of the NestedGraph. 
 
 ### <a name="erpattention"></a> 4. ERP-Attention
-The batch NestedGraph is eventually processed by the `visgator.models.erpa._head.RegressionHead`: each ERP token sequence is summed to a positional encoding (sequence-wise). A stack of self-attention layers attends to the sequence of concatenated ERPs, in addition to a learnable token. The latter is eventually projected linearly to predict the target bounding box. 
+The batch NestedGraph is eventually processed by the `visgator.models.erpa._head.RegressionHead`: each ERP token sequence is summed to a positional encoding (sequence-wise). A stack of self-attention layers attends to the sequence of concatenated ERPs, in addition to a learnable token. The latter is eventually projected linearly to predict the target bounding box (`visgator.models.erpa._head.RegressionHead.forward()`). 
+
 
