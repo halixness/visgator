@@ -20,6 +20,8 @@ dependencies = [
     "rustworkx>=0.12.1",
     "wandb>=0.15.3",
     "ruamel-yaml>=0.17.31",
+    "tls_client>=0.2.1",
+    "ratelimit>=2.2.1",
 ]
 requires-python = ">=3.10"
 readme = "README.md"
