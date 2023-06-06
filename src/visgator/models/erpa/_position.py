@@ -38,19 +38,18 @@ class PatchSpatialEncodings(nn.Module):
         pos_y = y_embed[:, :, :, None] / dim_t  # (B, H, W, C / 2)
 
         B, H, W = mask.size()
-        pos_x = torch.stack(
-            (pos_x[:, :, :, 0::2].sin(), pos_x[:, :, :, 1::2].cos()), dim=4
-        ).view(B, H, W, -1)
-        pos_y = torch.stack(
-            (pos_y[:, :, :, 0::2].sin(), pos_y[:, :, :, 1::2].cos()), dim=4
-        ).view(B, H, W, -1)
+        pos_x = torch.stack((pos_x[..., 0::2].sin(), pos_x[..., 1::2].cos()), dim=4)
+        pos_x = pos_x.view(B, H, W, -1)
+
+        pos_y = torch.stack((pos_y[..., 0::2].sin(), pos_y[..., 1::2].cos()), dim=4)
+        pos_y = pos_y.view(B, H, W, -1)
 
         pos = torch.cat((pos_y, pos_x), dim=3).permute(0, 3, 1, 2)  # (B, C, H, W)
 
         return pos
 
     def __call__(self, mask: Bool[Tensor, "B H W"]) -> Float[Tensor, "B C H W"]:
-        return super.__call__(mask)  # type: ignore
+        return super().__call__(mask)  # type: ignore
 
 
 class GaussianHeatmaps(nn.Module):
@@ -86,4 +85,4 @@ class GaussianHeatmaps(nn.Module):
         return heatmaps
 
     def __call__(self, boxes: BBoxes, size: tuple[int, int]) -> Float[Tensor, "B HW"]:
-        return super.__call__(boxes, size)  # type: ignore
+        return super().__call__(boxes, size)  # type: ignore

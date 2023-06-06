@@ -30,4 +30,7 @@ class PostProcessor(_PostProcessor[ModelOutput]):
         bboxes = bboxes[torch.arange(B), idx]  # (B, 4)
         images_size = images_size[torch.arange(B), idx]  # (B, 2)
 
-        return BBoxes(bboxes, images_size, output.boxes.format, output.boxes.normalized)
+        if not output.boxes.normalized:
+            raise RuntimeError("Expected normalized bounding boxes.")
+
+        return BBoxes(bboxes, output.original_sizes, output.boxes.format, True)

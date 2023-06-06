@@ -23,9 +23,10 @@ class Checkpoint:
     metrics_tracker: dict[str, Any]
     losses_tracker: dict[str, Any]
 
-    def save(self, checkpoint_file: Path) -> None:
+    def save(self, checkpoint_file: Path, wandb_save: bool) -> None:
         torch.save(self.__dict__, checkpoint_file)
-        wandb.save(str(checkpoint_file))
+        if wandb_save:
+            wandb.save(checkpoint_file)
 
     @classmethod
     def from_file(cls, checkpoint_file: Path, device: torch.device) -> Self:

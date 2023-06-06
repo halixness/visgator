@@ -125,4 +125,8 @@ class Model(_Model[ModelOutput]):
             graph=graph,
             boxes=boxes,
             mask=entity_mask,
+            original_sizes=[
+                tuple(sample.image.shape[1:])  # type: ignore
+                for sample in batch.samples
+            ],
         )

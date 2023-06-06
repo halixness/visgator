@@ -205,7 +205,8 @@ class Trainer(Generic[_T]):
             losses_tracker=self._el_tracker.state_dict(),
         )
 
-        checkpoint.save(checkpoint_file)
+        save = self._config.wandb.args.save if self._config.wandb.args else False
+        checkpoint.save(checkpoint_file, wandb_save=save)
         self._logger.info(f"Saved checkpoint at epoch {epoch + 1}.")
 
     def _save_model(self, epoch: int) -> None:
@@ -220,8 +221,8 @@ class Trainer(Generic[_T]):
         model_dir = self._dir / f"{self._model.name}_epoch-{epoch}_iou-{iou}.pt"
         torch.save(self._model.state_dict(), model_dir)
 
-        args = self._config.wandb.args
-        if args is not None and args.save:
+        save = self._config.wandb.args.save if self._config.wandb.args else False
+        if save:
             artifact = wandb.Artifact(
                 type="model",
                 name=f"{self._model.name}",

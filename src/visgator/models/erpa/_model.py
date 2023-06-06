@@ -9,6 +9,8 @@ from typing_extensions import Self
 from visgator.models import Model as _Model
 from visgator.utils.batch import Batch
 from visgator.utils.bbox import BBoxes, BBoxFormat
+from visgator.utils.torch import Nested4DTensor
+from visgator.utils.transforms import Compose, Resize
 
 from ._config import Config
 from ._criterion import Criterion
@@ -23,6 +25,11 @@ from ._postprocessor import PostProcessor
 class Model(_Model[BBoxes]):
     def __init__(self, config: Config) -> None:
         super().__init__()
+
+        self._transform = Compose(
+            [Resize(800, max_size=1333, p=1.0)],
+            p=1.0,
+        )
 
         self._criterion = Criterion(config.criterion)
         self._postprocessor = PostProcessor()
@@ -50,8 +57,16 @@ class Model(_Model[BBoxes]):
         return self._postprocessor
 
     def forward(self, batch: Batch) -> BBoxes:
-        detections = self._detector(batch)
-        img_embeddings = self._vision(batch)
+        images = Nested4DTensor.from_tensors(
+            [self._transform(sample.image) for sample in batch.samples]
+        )
+        img_tensor = images.tensor / 255.0
+        images = Nested4DTensor(img_tensor, images.sizes, images.mask)
+
+        detections = self._detector(
+            images, [sample.caption for sample in batch.samples]
+        )
+        img_embeddings = self._vision(images)
         text_embeddings = self._text(batch)
 
         graphs = [
@@ -77,4 +92,15 @@ class Model(_Model[BBoxes]):
         boxes = BBoxes(padded_boxes, images_size, BBoxFormat.CXCYWH, True)  # (BN, 4)
         graph = self._decoder(img_embeddings, graph, boxes)
 
-        return self._head(graph, img_embeddings.sizes)
+        boxes = self._head(graph, img_embeddings.sizes)
+        if not boxes.normalized:
+            raise RuntimeError("Boxes must be normalized.")
+
+        boxes = BBoxes(
+            boxes.tensor,
+            [tuple(sample.image.shape[1:]) for sample in batch],  # type: ignore
+            boxes.format,
+            True,
+        )
+
+        return boxes

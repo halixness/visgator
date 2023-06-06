@@ -46,8 +46,8 @@ class Decoder(nn.Module):
         union_heatmaps = self._gaussian_heatmaps(union_boxes, (H, W))
         heatmaps1 = heatmaps[edge_index[0]]  # (BE HW)
         heatmaps2 = heatmaps[edge_index[1]]  # (BE HW)
-        edge_heatmaps = torch.max(
-            torch.max(heatmaps1, heatmaps2),
+        edge_heatmaps = torch.maximum(
+            torch.maximum(heatmaps1, heatmaps2),
             union_heatmaps,
         )  # (BE HW)
 

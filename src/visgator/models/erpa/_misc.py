@@ -62,8 +62,20 @@ class Graph:
                 edge_index_list.append(indexes)
                 edge_rel_index_list.extend([connection.relation] * len(tmp))
 
-        edge_index = torch.cat(edge_index_list, dim=1)  # 2, M
-        edge_rel_index = torch.tensor(edge_rel_index_list)  # M
+        if len(edge_index_list) == 0:
+            edge_index = torch.empty(
+                (2, 0),
+                dtype=torch.long,
+                device=detections.entities.device,
+            )
+        else:
+            edge_index = torch.cat(edge_index_list, dim=1)  # (2, M)
+
+        edge_rel_index = torch.tensor(
+            edge_rel_index_list,
+            dtype=torch.long,
+            device=embeddings.relations.device,
+        )  # (M,)
         edges = embeddings.relations[edge_rel_index]
 
         return cls(nodes, edges, edge_index)

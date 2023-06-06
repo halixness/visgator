@@ -66,7 +66,7 @@ class Graph:
         for idx, detection in enumerate(detections.entities):
             entity = detection.item()
             tmp = (detections.entities == entity).nonzero(as_tuple=True)[0]
-            # tmp = tmp[tmp != idx] remove this comment if you want to remove self loops
+            # tmp = tmp[tmp != idx] uncomment if you want to remove self loops
 
             indexes = torch.cat(
                 [
@@ -81,13 +81,19 @@ class Graph:
         same_entity_edge_index = torch.cat(same_entity_edge_index_list, dim=1)
 
         if len(edge_index_list) > 0:
-            edge_index = torch.cat(edge_index_list, dim=1)  # 2, M
+            edge_index = torch.cat(edge_index_list, dim=1)  # (2, M)
             edge_index = torch.cat([edge_index, same_entity_edge_index], dim=1)
         else:
+            # same_entity_edge_index will never be empty because of the self loops
+            # if we remove self loops, we need to check for this case
             edge_index = same_entity_edge_index
 
         relations_embeddings = torch.cat([embeddings.relations, same_entity_edge])
-        edge_rel_index = torch.tensor(edge_rel_index_list)  # M
+        edge_rel_index = torch.tensor(
+            edge_rel_index_list,
+            dtype=torch.long,
+            device=relations_embeddings.device,
+        )  # (M,)
         edges = relations_embeddings[edge_rel_index]
 
         return cls(nodes, edges, edge_index)
@@ -237,3 +243,4 @@ class ModelOutput:
     graph: NestedGraph
     boxes: BBoxes  # (BN, 4)
     mask: Bool[Tensor, "B N"]
+    original_sizes: list[tuple[int, int]]

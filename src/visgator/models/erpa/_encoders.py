@@ -42,11 +42,15 @@ class VisionEncoder(nn.Module):
         if encoder.input_patchnorm:
             raise NotImplementedError
 
-        transform = [T.Lambda(lambda x: x / 255)]
-        if mean is not None and std is not None:
-            transform.append(T.Normalize(mean, std))
+        if mean is None:
+            mean = (0.48145466, 0.4578275, 0.40821073)
+        if std is None:
+            std = (0.26862954, 0.26130258, 0.27577711)
 
-        self._transform = T.Compose(transform)
+        self.register_buffer("_mean", torch.tensor(mean).view(1, 3, 1, 1))
+        self.register_buffer("_std", torch.tensor(std).view(1, 3, 1, 1))
+        self._mean: Tensor  # just for type hinting
+        self._std: Tensor  # just for type hinting
 
         self._patch_conv = encoder.conv1
 
@@ -81,15 +85,15 @@ class VisionEncoder(nn.Module):
         for param in self.parameters():
             param.requires_grad = False
 
-    def forward(self, batch: Batch) -> Nested4DTensor:
-        images = [self._transform(sample.image) for sample in batch]
+    def forward(self, images: Nested4DTensor) -> Nested4DTensor:
+        img_tensor = (images.tensor - self._mean) / self._std
+        img_tensor.masked_fill_(images.mask.unsqueeze(1).expand(-1, 3, -1, -1), 0.0)
+        images = Nested4DTensor(img_tensor, images.sizes, images.mask)
 
-        input = Nested4DTensor.from_tensors(images)
-        x = self._patch_conv(input.tensor)
-        new_height, new_width = x.shape[-2:]  # H W
-        new_masks = F.interpolate(input.mask[None].float(), size=x.shape[-2:])[
-            0
-        ].bool()  # N H W
+        x = self._patch_conv(images.tensor)
+        H, W = x.shape[-2:]  # H W
+        new_masks = F.interpolate(images.mask[None].float(), size=x.shape[-2:])[0]
+        new_masks = new_masks.bool()  # N H W
 
         patch_embeddings = self._positional_emb[1:]
         num_patches = patch_embeddings.shape[0]
@@ -103,7 +107,7 @@ class VisionEncoder(nn.Module):
         padding_height, padding_width = self._patch_conv.padding
         stride_height, stride_width = self._patch_conv.stride
         for i in range(len(x)):
-            shape = input.sizes[i]
+            shape = images.sizes[i]
             h = ((shape[0] + 2 * padding_height - kernel_height) // stride_height) + 1
             w = ((shape[1] + 2 * padding_width - kernel_wodth) // stride_width) + 1
 
@@ -146,13 +150,13 @@ class VisionEncoder(nn.Module):
         x = x @ self._proj
 
         x = x[:, 1:]  # remove cls token
-        x = x.view(len(x), new_height, new_width, -1)
+        x = x.view(len(x), H, W, -1)
         x = x.permute(0, 3, 1, 2)  # N D H W
 
         return Nested4DTensor(x, new_sizes, new_masks)
 
-    def __call__(self, batch: Batch) -> Nested4DTensor:
-        return super().__call__(batch)  # type: ignore
+    def __call__(self, images: Nested4DTensor) -> Nested4DTensor:
+        return super().__call__(images)  # type: ignore
 
 
 class _VisionTransformer(nn.Module):
@@ -219,6 +223,8 @@ class TextEncoder(nn.Module):
     def __init__(self, model: CLIP, tokenizer: Tokenizer, output_dim: int) -> None:
         super().__init__()
 
+        self._dummy = nn.Parameter(torch.empty(0))
+
         self._tokenizer = tokenizer
 
         self._transformer = model.transformer
@@ -226,7 +232,8 @@ class TextEncoder(nn.Module):
         self._token_emb = model.token_embedding
         self._positional_emb = model.positional_embedding
         self._final_ln = model.ln_final
-        self._attn_mask = model.attn_mask
+        self.register_buffer("_attn_mask", model.attn_mask)
+        self._attn_mask: Tensor  # just for type checking
 
         self._freeze()
 
@@ -234,9 +241,8 @@ class TextEncoder(nn.Module):
             self._text_projection = model.text_projection
             self._text_projection.requires_grad_(False)
         else:
-            self._text_projection = nn.Linear(
-                model.text_projection.shape[0],
-                output_dim,
+            self._text_projection = nn.Parameter(
+                torch.randn(model.text_projection.shape[0], output_dim)
             )
 
     def _freeze(self) -> None:
@@ -252,6 +258,7 @@ class TextEncoder(nn.Module):
             entities = caption.graph.entities
             relations = caption.graph.relations
 
+            texts.append(caption.sentence)
             texts.extend([entity.span for entity in entities])
             texts.extend(
                 [
@@ -261,7 +268,7 @@ class TextEncoder(nn.Module):
                 ]
             )
 
-        return self._tokenizer(texts)
+        return self._tokenizer(texts).to(self._dummy.device)
 
     def _unflatten(self, batch: Batch, tokens: Tensor) -> list[CaptionEmbeddings]:
         captions = []
