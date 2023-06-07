@@ -5,9 +5,12 @@
 from __future__ import annotations
 
 import enum
-from typing import Any, Self
+from dataclasses import dataclass
 
-from .._config import Config as BaseConfig
+import serde
+from typing_extensions import Self
+
+from visgator.models import Config as _Config
 
 
 class YOLOModel(enum.Enum):
@@ -26,10 +29,10 @@ class YOLOModel(enum.Enum):
 
 
 class CLIPModel(enum.Enum):
-    ViT_B_32_224 = enum.auto()
-    ViT_B_16_224 = enum.auto()
-    ViT_L_14_224 = enum.auto()
-    Vit_L_14_336 = enum.auto()
+    ViT_B_32_224 = "B32"
+    ViT_B_16_224 = "B16"
+    ViT_L_14_224 = "L14"
+    Vit_L_14_336 = "L14_336"
 
     @classmethod
     def from_str(cls, s: str) -> CLIPModel:
@@ -60,17 +63,15 @@ class CLIPModel(enum.Enum):
                 raise ValueError(f"Invalid CLIP model: {self}")
 
 
-class Config(BaseConfig):
-    def __init__(self, cfg: dict[str, Any]) -> None:
-        super().__init__(cfg)
+@serde.serde(type_check=serde.Strict)
+@dataclass(frozen=True)
+class Config(_Config):
+    yolo: YOLOModel = serde.field(default=YOLOModel.MEDIUM)
+    clip: CLIPModel = serde.field(default=CLIPModel.ViT_B_32_224)
 
-        self._yolo = YOLOModel.from_str(cfg.get("yolo", "nano"))
-        self._clip = CLIPModel.from_str(cfg.get("clip", "B32"))
+    @classmethod
+    def from_dict(cls, cfg: dict[str, str]) -> Self:
+        return serde.from_dict(cls, cfg)
 
-    @property
-    def yolo(self) -> YOLOModel:
-        return self._yolo
-
-    @property
-    def clip(self) -> CLIPModel:
-        return self._clip
+    def to_dict(self) -> dict[str, str]:
+        return serde.to_dict(self)

@@ -6,4 +6,4 @@
 
 from ._bbox import BBox, BBoxes, BBoxFormat
 
-__all__ = ["BBox", "BBoxFormat", "BBoxes"]
+__all__ = ["BBox", "BBoxes", "BBoxFormat"]

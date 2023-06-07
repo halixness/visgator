@@ -5,10 +5,15 @@
 """Configurations for RefCOCO dataset."""
 
 import enum
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Self
+from typing import Any, Optional
 
-from .._config import Config as BaseConfig
+import serde
+from typing_extensions import Self
+
+from visgator.datasets import Config as _Config
+from visgator.utils.graph import SceneGraphParserType
 
 
 class SplitProvider(enum.Enum):
@@ -23,25 +28,39 @@ class SplitProvider(enum.Enum):
         return self.value
 
 
-class Config(BaseConfig):
+@serde.serde(type_check=serde.Strict)
+@dataclass(frozen=True)
+class GenerationConfig:
+    """Configuration for RefCOCOg dataset generation."""
+
+    num_workers: Optional[int] = None
+    chunksize: int = 128
+    parser: SceneGraphParserType = SceneGraphParserType.SPACY
+
+    @classmethod
+    def from_dict(cls, cfg: dict[str, Any]) -> Self:
+        return serde.from_dict(cls, cfg)
+
+    def to_dict(self) -> dict[str, Any]:
+        return serde.to_dict(self)
+
+
+@serde.serde(type_check=serde.Strict)
+@dataclass(frozen=True)
+class Config(_Config):
     """Configuration for RefCOCOg dataset."""
 
-    def __init__(self, cfg: dict[str, Any]) -> None:
-        super().__init__(cfg)
+    path: Path
+    split_provider: SplitProvider
+    generation: GenerationConfig = serde.field(
+        default=GenerationConfig(),
+        serializer=GenerationConfig.to_dict,
+        deserializer=GenerationConfig.from_dict,
+    )
 
-        path = cfg.get("path", None)
-        if path is None:
-            raise ValueError("Missing 'path' field in RefCOCO config.")
-        self._path = Path(path)
+    @classmethod
+    def from_dict(cls, cfg: dict[str, Any]) -> Self:
+        return serde.from_dict(cls, cfg)
 
-        self._split_provider = SplitProvider.from_str(cfg.get("split_provider", "umd"))
-
-    @property
-    def path(self) -> Path:
-        """Returns the path to the dataset."""
-        return self._path
-
-    @property
-    def split_provider(self) -> SplitProvider:
-        """Returns the split provider."""
-        return self._split_provider
+    def to_dict(self) -> dict[str, Any]:
+        return serde.to_dict(self)

@@ -2,32 +2,29 @@
 ##
 ##
 
-from __future__ import annotations
-
-import importlib
+import abc
 from typing import Any
 
+from typing_extensions import Self
 
-class Config:
-    def __init__(self, cfg: dict[str, Any]) -> None:
-        name = cfg.get("name")
-        if name is None:
-            raise ValueError("Missing 'name' field in dataset configuration.")
-        self._name = str(name)
+from visgator.utils.misc import get_subclass, public_parent_module
+
+
+class Config(abc.ABC):
+    """Abstract base class for dataset configuration."""
+
+    @classmethod
+    def from_dict(cls, cfg: dict[str, Any]) -> Self:
+        """Deserializes a dictionary into a Config object."""
+        module_path = str(cfg["module"])
+        sub_cls = get_subclass(module_path, cls)
+        return sub_cls.from_dict(cfg)
 
     @property
-    def name(self) -> str:
-        return self._name
+    def module(self) -> str:
+        """The module path of the class."""
+        return public_parent_module(self.__class__)
 
-    @staticmethod
-    def from_dict(cfg: dict[str, Any]) -> Config:
-        name = cfg.get("name", None)
-        if name is None:
-            raise ValueError("Missing 'name' field in dataset configuration.")
-
-        child_module = str(name).lower()
-        parent_module = ".".join(Config.__module__.split(".")[:-1])
-        module = importlib.import_module(f"{parent_module}.{child_module}")
-        cls = getattr(module, "Config")
-
-        return cls(cfg)  # type: ignore
+    @abc.abstractmethod
+    def to_dict(self) -> dict[str, Any]:
+        """Serializes a Config object into a dictionary."""

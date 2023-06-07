@@ -1,33 +1,10 @@
-[tool.pdm]
-
-[tool.pdm.dev-dependencies]
-lint = [
-    "black>=23.3.0",
-    "ruff>=0.0.263",
-    "mypy>=1.2.0",
-    "pre-commit>=3.3.1",
-]
-types = [
-    "types-tqdm>=4.65.0.1",
-]
-
-[tool.black]
-line-length = 88
-target-version = ["py311"]
-
-
-[tool.ruff]
-select = ["F", "E", "I", "W"]
-fix = true
-ignore = ["F722"]
-
-
 [project]
 name = "visgator"
 version = "0.1.0"
-description = ""
+description = "A deep learning library for Visual Grounding."
 authors = [
     { name = "Francesco Gentile", email = "francesco.gentile@studenti.unitn.it" },
+    { name = "Diego Calanzone", email = "diego.calanzone@studenti.unitn.it" },
 ]
 dependencies = [
     "torch>=2.0.0",
@@ -37,6 +14,41 @@ dependencies = [
     "tqdm>=4.65.0",
     "jaxtyping>=0.2.15",
     "torchmetrics>=0.11.4",
+    "open-clip-torch>=2.20.0",
+    "pyserde>=0.10.6",
+    "SceneGraphParser>=0.1.0",
+    "rustworkx>=0.12.1",
+    "wandb>=0.15.3",
+    "ruamel-yaml>=0.17.31",
+    "tls_client>=0.2.1",
+    "ratelimit>=2.2.1",
+    "groundingdino-py>=0.4.0",
+    "torch-scatter>=2.0.0",
 ]
-requires-python = ">=3.11"
+requires-python = ">=3.10"
+readme = "README.md"
 license = { text = "MIT" }
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+[tool.pdm]
+
+[[tool.pdm.source]]
+type = "find_links"
+url = "https://data.pyg.org/whl/torch-2.0.0+cu117.html"
+name = "torch-scatter"
+
+[tool.pdm.dev-dependencies]
+lint = ["black>=23.3.0", "ruff>=0.0.263", "mypy>=1.2.0", "pre-commit>=3.3.1"]
+types = ["types-tqdm>=4.65.0.1", "types-requests>=2.31.0.0"]
+
+[tool.black]
+line-length = 88
+target-version = ["py311"]
+
+[tool.ruff]
+select = ["F", "E", "I", "W"]
+fix = true
+ignore = ["F722"]
