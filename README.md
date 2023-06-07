@@ -14,6 +14,20 @@ cd visgator
 pdm install
 ```
 
+#### SceneGraphGrounder and ERPA
+
+In the configuration files for `SceneGraphGrounder` and `ERPA`, you also need to provide the paths to the weights of the pre-trained [Grounding DINO](https://github.com/IDEA-Research/GroundingDINO/) model and its configuration file. The weights of the model can be downloaded with the following command:
+
+```bash
+# Grounding DINO with Swin-T backbone
+wget -q https://github.com/IDEA-Research/GroundingDINO/releases/download/v0.1.0-alpha/groundingdino_swint_ogc.pth
+
+# Grounding DINO with Swin-B backbone
+wget -q https://github.com/IDEA-Research/GroundingDINO/releases/download/v0.1.0-alpha2/groundingdino_swinb_cogcoor.pth
+```
+
+The configuration file for Grounding DINO with Swin-T backbone can be found [here](config/GroundingDINO_SwinT_OGC.py), while the configuration file for Grounding DINO with Swin-B backbone can be found [here](config/GroundingDINO_SwinB_cfg.py).
+
 ## Usage
 
 Example command to train the baseline model on the RefCOCOg dataset:
