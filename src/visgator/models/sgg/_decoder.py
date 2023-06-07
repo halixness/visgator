@@ -6,7 +6,7 @@ import torch
 import torch.nn.functional as F
 from jaxtyping import Float
 from torch import Tensor, nn
-from torch_scatter import scatter_add
+from torch_scatter import scatter_add, scatter_softmax
 
 from visgator.utils.bbox import BBoxes
 from visgator.utils.torch import Nested4DTensor
@@ -208,9 +208,7 @@ class ModifiedGAT(nn.Module):
 
         hidden_head = hidden.view(BE, H, -1)  # (BE H D/H)
         presoftmax_alpha = (hidden_head * self._attn_proj).sum(dim=-1)  # (BE H)
-        exp_alpha = torch.exp(presoftmax_alpha)  # (BE H)
-        alpha_sum = scatter_add(exp_alpha, edge_index[0], dim=0)  # (BN H)
-        alpha = exp_alpha / alpha_sum[edge_index[0]]  # (BE H)
+        alpha = scatter_softmax(presoftmax_alpha, edge_index[0], dim=0)  # (BE, H)
         alpha = self._dropout(alpha)  # (BE H)
 
         new_edges = self._edge_out_proj(hidden)  # (BE D)
