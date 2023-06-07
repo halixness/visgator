@@ -2,6 +2,11 @@
 # It is not intended for manual editing.
 
 [[package]]
+name = "addict"
+version = "2.4.0"
+summary = "Addict is a dictionary whose items can be set using both attribute and item syntax."
+
+[[package]]
 name = "appdirs"
 version = "1.4.4"
 summary = "A small Python module for determining appropriate platform-specific dirs, e.g. a \"user data dir\"."
@@ -164,6 +169,23 @@ requires_python = ">=3.7"
 summary = "GitPython is a Python library used to interact with Git repositories"
 dependencies = [
     "gitdb<5,>=4.0.1",
+]
+
+[[package]]
+name = "groundingdino-py"
+version = "0.4.0"
+summary = "open-set object detector"
+dependencies = [
+    "addict",
+    "numpy",
+    "opencv-python",
+    "pycocotools",
+    "supervision==0.6.0",
+    "timm",
+    "torch",
+    "torchvision",
+    "transformers",
+    "yapf",
 ]
 
 [[package]]
@@ -518,6 +540,16 @@ requires_python = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 summary = "Cross-platform lib for process and system monitoring in Python."
 
 [[package]]
+name = "pycocotools"
+version = "2.0.6"
+requires_python = ">=3.5"
+summary = "Official APIs for the MS-COCO dataset"
+dependencies = [
+    "matplotlib>=2.1.0",
+    "numpy",
+]
+
+[[package]]
 name = "pydantic"
 version = "1.10.8"
 requires_python = ">=3.7"
@@ -744,6 +776,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "supervision"
+version = "0.6.0"
+requires_python = ">=3.7"
+summary = "A set of easy-to-use utils that will come in handy in any Computer Vision project"
+dependencies = [
+    "matplotlib",
+    "numpy>=1.20.0",
+    "opencv-python",
+]
+
+[[package]]
 name = "sympy"
 version = "1.11.1"
 requires_python = ">=3.8"
@@ -839,6 +882,12 @@ dependencies = [
     "triton==2.0.0; platform_system == \"Linux\" and platform_machine == \"x86_64\"",
     "typing-extensions",
 ]
+
+[[package]]
+name = "torch-scatter"
+version = "2.1.1+pt20cu117"
+requires_python = ">=3.7"
+summary = "PyTorch Extension Library of Optimized Scatter Operations"
 
 [[package]]
 name = "torchmetrics"
@@ -1037,13 +1086,25 @@ version = "0.40.0"
 requires_python = ">=3.7"
 summary = "A built-package format for Python"
 
+[[package]]
+name = "yapf"
+version = "0.33.0"
+summary = "A formatter for Python code."
+dependencies = [
+    "tomli>=2.0.1",
+]
+
 [metadata]
 lock_version = "4.2"
 cross_platform = true
 groups = ["default", "lint", "types"]
-content_hash = "sha256:307f08f8c9900e2f31e527e7c7c5de26891ba40dd58cfa8a17c93766b9066dbb"
+content_hash = "sha256:b78538fb97426ce24ff3d6e0ab286854f83c68b795b5e9861fd7fd4e9fcbb9c8"
 
 [metadata.files]
+"addict 2.4.0" = [
+    {url = "https://files.pythonhosted.org/packages/6a/00/b08f23b7d7e1e14ce01419a467b583edbb93c6cdb8654e54a9cc579cd61f/addict-2.4.0-py3-none-any.whl", hash = "sha256:249bb56bbfd3cdc2a004ea0ff4c2b6ddc84d53bc2194761636eb314d5cfa5dfc"},
+    {url = "https://files.pythonhosted.org/packages/85/ef/fd7649da8af11d93979831e8f1f8097e85e82d5bfeabc8c68b39175d8e75/addict-2.4.0.tar.gz", hash = "sha256:b3b2210e0e067a281f5646c8c5db92e99b7231ea8b0eb5f74dbdf9e259d4e494"},
+]
 "appdirs 1.4.4" = [
     {url = "https://files.pythonhosted.org/packages/3b/00/2344469e2084fb287c2e0b57b72910309874c3245463acd6cf5e3db69324/appdirs-1.4.4-py2.py3-none-any.whl", hash = "sha256:a841dacd6b99318a741b166adb07e19ee71a274450e68237b4650ca1055ab128"},
     {url = "https://files.pythonhosted.org/packages/d7/d8/05696357e0311f5b5c316d7b95f46c669dd9c15aaeecbb48c7d0aeb88c40/appdirs-1.4.4.tar.gz", hash = "sha256:7d5d0167b2b1ba821647616af46a749d1c653740dd0d2415100fe26e27afdf41"},
@@ -1351,6 +1412,9 @@ content_hash = "sha256:307f08f8c9900e2f31e527e7c7c5de26891ba40dd58cfa8a17c93766b
 "gitpython 3.1.31" = [
     {url = "https://files.pythonhosted.org/packages/5f/11/2b0f60686dbda49028cec8c66bd18a5e82c96d92eef4bc34961e35bb3762/GitPython-3.1.31.tar.gz", hash = "sha256:8ce3bcf69adfdf7c7d503e78fd3b1c492af782d58893b650adb2ac8912ddd573"},
     {url = "https://files.pythonhosted.org/packages/9e/8a/d1e02cc111d65b0346f70abb83c51f8593e7134bf694a4a56d1a470caaf7/GitPython-3.1.31-py3-none-any.whl", hash = "sha256:f04893614f6aa713a60cbbe1e6a97403ef633103cdd0ef5eb6efe0deb98dbe8d"},
+]
+"groundingdino-py 0.4.0" = [
+    {url = "https://files.pythonhosted.org/packages/da/26/af35089119098ecd9d2e174b9cfbeb0c1246d65449c718b4e57328a08c1c/groundingdino-py-0.4.0.tar.gz", hash = "sha256:23de56af498b7cdcc024eb1062fc3179e3cc4dacd92adbfb625097065377700f"},
 ]
 "huggingface-hub 0.14.1" = [
     {url = "https://files.pythonhosted.org/packages/23/27/5c9adfa51fc841cd1e2c4949b49bd8f05ba4e8254ef5bb60ba82b8bcdafc/huggingface_hub-0.14.1.tar.gz", hash = "sha256:9ab899af8e10922eac65e290d60ab956882ab0bf643e3d990b1394b6b47b7fbc"},
@@ -1893,6 +1957,9 @@ content_hash = "sha256:307f08f8c9900e2f31e527e7c7c5de26891ba40dd58cfa8a17c93766b
     {url = "https://files.pythonhosted.org/packages/e5/2e/56db2b45508ad484b3f22888b3e1adaaf09b8766eaa058ed0e4486c1abae/psutil-5.9.5-cp36-abi3-manylinux_2_12_i686.manylinux2010_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:7a7dd9997128a0d928ed4fb2c2d57e5102bb6089027939f3b722f3a210f9a8da"},
     {url = "https://files.pythonhosted.org/packages/ed/98/2624954f83489ab13fde2b544baa337d5578c07eee304d320d9ba56e1b1f/psutil-5.9.5-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:c607bb3b57dc779d55e1554846352b4e358c10fff3abf3514a7a6601beebdb30"},
     {url = "https://files.pythonhosted.org/packages/fa/e0/e91277b1cabf5c3f2995c22314553f1be68b17444260101f365c5a5b6ba1/psutil-5.9.5-cp36-abi3-win32.whl", hash = "sha256:104a5cc0e31baa2bcf67900be36acde157756b9c44017b86b2c049f11957887d"},
+]
+"pycocotools 2.0.6" = [
+    {url = "https://files.pythonhosted.org/packages/ef/c6/90220be3b39fbc4cbd203775ca47dd8dc97fae06fbd2b500637395621b7c/pycocotools-2.0.6.tar.gz", hash = "sha256:7fe089b05cc18e806dcf3bd764708d86dab922a100f3734eb77fb77a70a1d18c"},
 ]
 "pydantic 1.10.8" = [
     {url = "https://files.pythonhosted.org/packages/05/43/e39c6bf32695f2d568ebb2f6a3dd843c8e2edb57c77a4a911d517b5675b2/pydantic-1.10.8-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:35db5301b82e8661fa9c505c800d0990bc14e9f36f98932bb1d248c0ac5cada5"},
@@ -2454,6 +2521,10 @@ content_hash = "sha256:307f08f8c9900e2f31e527e7c7c5de26891ba40dd58cfa8a17c93766b
     {url = "https://files.pythonhosted.org/packages/f2/58/f248173c08d0ce8347e1cc970f4748ca88dcdfcf9c8fb8c27495d67a703e/srsly-2.4.6-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:7dc1c3877618d67a44ec74830510cd72d54fcfb32339388f2c6cbd559d27d20e"},
     {url = "https://files.pythonhosted.org/packages/fc/87/b2d7f5e8b3dd366294e29b7e010738c1c0d01da665546f20f788ce91ecef/srsly-2.4.6-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:9742e5f4205c5484cea925ff24b1bd850f1e9291bd0ada6dfe1ec2b715e732b5"},
 ]
+"supervision 0.6.0" = [
+    {url = "https://files.pythonhosted.org/packages/42/7a/4fe657cae29eedeca34756a80a053ac3b1b3c80462cdb6768f428625f9ca/supervision-0.6.0-py3-none-any.whl", hash = "sha256:e0366fa4d32db84f94f4472a260414fc6fb01b69bdb0155c692c0dc62bdb9ea7"},
+    {url = "https://files.pythonhosted.org/packages/4f/95/2e94efc178f17275a6e2cbffee079681695edf72d125b78d4755f49128aa/supervision-0.6.0.tar.gz", hash = "sha256:e1e3e54034c672414aca57b3f6c5e915967a15e1ffd1510956c61f12563a3c56"},
+]
 "sympy 1.11.1" = [
     {url = "https://files.pythonhosted.org/packages/2d/49/a2d03101e2d28ad528968144831d506344418ef1cc04839acdbe185889c2/sympy-1.11.1-py3-none-any.whl", hash = "sha256:938f984ee2b1e8eae8a07b884c8b7a1146010040fccddc6539c54f401c8f6fcf"},
     {url = "https://files.pythonhosted.org/packages/5a/36/4667b08bc45131fe655a27b1a112c1730f3244343c53a338f44d730bd6ba/sympy-1.11.1.tar.gz", hash = "sha256:e32380dce63cb7c0108ed525570092fd45168bdae2faa17e528221ef72e88658"},
@@ -2575,6 +2646,17 @@ content_hash = "sha256:307f08f8c9900e2f31e527e7c7c5de26891ba40dd58cfa8a17c93766b
     {url = "https://files.pythonhosted.org/packages/f7/ee/e00f3fab0383fccf8ee1697ba468e0248bd36a9942d00d6c12fb08cb393a/torch-2.0.0-cp38-none-macosx_10_9_x86_64.whl", hash = "sha256:cc788cbbbbc6eb4c90e52c550efd067586c2693092cf367c135b34893a64ae78"},
     {url = "https://files.pythonhosted.org/packages/fa/f4/c90ede3d6ea4dd0f056c11d9d0bdac2408f51ac7de194539453f3f572a51/torch-2.0.0-1-cp39-cp39-manylinux2014_aarch64.whl", hash = "sha256:ab2da16567cb55b67ae39e32d520d68ec736191d88ac79526ca5874754c32203"},
 ]
+"torch-scatter 2.1.1+pt20cu117" = [
+    {url = "https://data.pyg.org/whl/torch-2.0.0%2Bcu117/torch_scatter-2.1.1%2Bpt20cu117-cp310-cp310-linux_x86_64.whl", hash = "sha256:fee771e3d0545c653223315dabec73fadf594785f8fe91b3e4a9762087c6dddf"},
+    {url = "https://data.pyg.org/whl/torch-2.0.0%2Bcu117/torch_scatter-2.1.1%2Bpt20cu117-cp310-cp310-win_amd64.whl", hash = "sha256:d2ad138c870206b732537c287d5eb6b125fb9ea43203a6a908f83dbd0ab61fbc"},
+    {url = "https://data.pyg.org/whl/torch-2.0.0%2Bcu117/torch_scatter-2.1.1%2Bpt20cu117-cp311-cp311-linux_x86_64.whl", hash = "sha256:362cdf4389bd820fd7177afd51eb62e4ba2285010781fb258d6c662302e92aa5"},
+    {url = "https://data.pyg.org/whl/torch-2.0.0%2Bcu117/torch_scatter-2.1.1%2Bpt20cu117-cp311-cp311-win_amd64.whl", hash = "sha256:ac94d0470e7ab41ab589ce7c8846a23ed950dd09169164a222f7b6ff7fa7af2b"},
+    {url = "https://data.pyg.org/whl/torch-2.0.0%2Bcu117/torch_scatter-2.1.1%2Bpt20cu117-cp38-cp38-linux_x86_64.whl", hash = "sha256:8c634278d2f4e126c0d243c7fa4b9cab94c0f7f278abda96bb93c4b73ffc387a"},
+    {url = "https://data.pyg.org/whl/torch-2.0.0%2Bcu117/torch_scatter-2.1.1%2Bpt20cu117-cp38-cp38-win_amd64.whl", hash = "sha256:88117d8615ad6a098d90649939e358afb4c5e02c204d675f5a1e02ef2419c13e"},
+    {url = "https://data.pyg.org/whl/torch-2.0.0%2Bcu117/torch_scatter-2.1.1%2Bpt20cu117-cp39-cp39-linux_x86_64.whl", hash = "sha256:7a18d9fc6b77c2a5c47bf3446c6c74c6452f2628fc071adefc46f99b61f288c7"},
+    {url = "https://data.pyg.org/whl/torch-2.0.0%2Bcu117/torch_scatter-2.1.1%2Bpt20cu117-cp39-cp39-win_amd64.whl", hash = "sha256:aae787a68f0c53c5b5f130cfc35872cc987dce37668265f0c6c58f7a2bab308f"},
+    {url = "https://files.pythonhosted.org/packages/db/ae/3dee934b7118aec8528a6832dbb3cf079e13dd442c4600cae8d29a4f9fea/torch_scatter-2.1.1.tar.gz", hash = "sha256:59b6fad2c04f58b4ea46bb56e839edfd421faaa849d5e32ab1290975b9ef1656"},
+]
 "torchmetrics 0.11.4" = [
     {url = "https://files.pythonhosted.org/packages/f3/ed/9f76e2d65d2e6d67a0ba097f34f4b618fb7466d731476d3d3440dfe2cb8e/torchmetrics-0.11.4.tar.gz", hash = "sha256:1fe45a14b44dd65d90199017dd5a4b5a128d56a8a311da7916c402c18c671494"},
     {url = "https://files.pythonhosted.org/packages/fb/47/6e9f9b41c48750a45ad07cc6d43a2979bfc09e6989656aece97cc59cbef1/torchmetrics-0.11.4-py3-none-any.whl", hash = "sha256:45f892f3534e91f3ad9e2488d1b05a93b7cb76b7d037969435a41a1f24750d9a"},
@@ -2688,4 +2770,8 @@ content_hash = "sha256:307f08f8c9900e2f31e527e7c7c5de26891ba40dd58cfa8a17c93766b
 "wheel 0.40.0" = [
     {url = "https://files.pythonhosted.org/packages/61/86/cc8d1ff2ca31a312a25a708c891cf9facbad4eae493b3872638db6785eb5/wheel-0.40.0-py3-none-any.whl", hash = "sha256:d236b20e7cb522daf2390fa84c55eea81c5c30190f90f29ae2ca1ad8355bf247"},
     {url = "https://files.pythonhosted.org/packages/fc/ef/0335f7217dd1e8096a9e8383e1d472aa14717878ffe07c4772e68b6e8735/wheel-0.40.0.tar.gz", hash = "sha256:cd1196f3faee2b31968d626e1731c94f99cbdb67cf5a46e4f5656cbee7738873"},
+]
+"yapf 0.33.0" = [
+    {url = "https://files.pythonhosted.org/packages/32/ec/531851d561ecb656bd58dc102338d0aa07e086788f351c63a9f6b8a00fe6/yapf-0.33.0-py2.py3-none-any.whl", hash = "sha256:4c2b59bd5ffe46f3a7da48df87596877189148226ce267c16e8b44240e51578d"},
+    {url = "https://files.pythonhosted.org/packages/83/6e/72395cbbd59eedc48913f8694d445acbdba699c50312001b702c5ff46001/yapf-0.33.0.tar.gz", hash = "sha256:da62bdfea3df3673553351e6246abed26d9fe6780e548a5af9e70f6d2b4f5b9a"},
 ]
