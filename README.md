@@ -16,7 +16,7 @@ pdm install
 
 #### SceneGraphGrounder and ERPA
 
-If you want to train or test the models that use Grounding DINO (i.e., `SceneGraphGrounder` and `ERPA`), you also need to manually install the grounding dino wheel. To do this, download the wheel from [here](https://drive.google.com/file/d/16ugtOF8kmeOPfhFzbKUsR83uvepfA2ya/view?usp=sharing) and install it with
+If you want to train or test the models that use [Grounding DINO](https://github.com/IDEA-Research/GroundingDINO/) (i.e., `SceneGraphGrounder` and `ERPA`), you also need to manually install the grounding dino wheel. To do this, download the wheel from [here](https://drive.google.com/drive/folders/11PPyjgCc6rV5km6_t8nisr69Y7pThP_g?usp=sharing) and install it with:
 
 ```bash
 pip install <path_to_wheel>
@@ -27,10 +27,14 @@ where `<path_to_wheel>` should be replaced with the path to the downloaded wheel
 In the configuration files for such models, you also need to provide the paths to the weights of the pre-trained DINO model and the configuration file for the model. The weights of the model can be downloaded with the following command:
 
 ```bash
+# (Grounding DINO with Swin-T backbone)
 wget -q https://github.com/IDEA-Research/GroundingDINO/releases/download/v0.1.0-alpha/groundingdino_swint_ogc.pth
+
+# (Grounding DINO with Swin-B backbone)
+wget -q https://github.com/IDEA-Research/GroundingDINO/releases/download/v0.1.0-alpha2/groundingdino_swinb_cogcoor.pth
 ```
 
-The configuration file can be found [here](https://github.com/IDEA-Research/GroundingDINO/blob/main/groundingdino/config/GroundingDINO_SwinT_OGC.py).
+The configuration file for Grounding DINO with Swin-T backbone can be found [here](config/GroundingDINO_SwinT_OGC.py), while the configuration file for Grounding DINO with Swin-B backbone can be found [here](config/GroundingDINO_SwinB_cfg.py).
 
 If you want to use `SceneGraphGrounder`, you also need to install the [PyTorch Scatter](https://github.com/rusty1s/pytorch_scatter) package. To do this, run the following command:
 
