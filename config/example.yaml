@@ -6,42 +6,40 @@ wandb:
   project: "test"
   entity: "visgator"
   save: false
-  enabled: true
+  enabled: false
 dataset:
   module: ".refcocog"
-  path: "../refcocog"
+  path: "./data/refcocog"
   split_provider: "umd"
-encoder:
-  hidden_dim: 256
-head:
-  hidden_dim: 256
-decoder:
-  dropout: 0.1
 model:
   module: ".erpa"
   hidden_dim: 256
-  dropout: 0.1 # default
   encoders:
     model: "ViT-B-32" # default
     pretrained: "laion2b_s34b_b79k" # default
   detector:
-    weights: "../GroundingDINO/weights/weights.pth"
-    config: "../GroundingDINO/groundingdino/config/GroundingDINO_SwinT_OGC.py"
+    weights: "weights/groundingdino_swinb_cogcoor.pth"
+    config: "config/GroundingDINO_SwinB_cfg.py"
     box_threshold: 0.35 # default
     text_threshold: 0.25 # default
   decoder:
     num_layers: 3
     num_heads: 8 # default
     epsilon_layer_scale: 0.1 # default
+    dropout: 0.1 # default
   head:
     num_layers: 2
     num_heads: 8 # default
+    dropout: 0.1 # default
   criterion:
     l1_weight: 1.0 # default
     giou_weight: 1.0 # default
+seed: 42
 compile: False
 num_epochs: 3
-batch_size: 32
+train_batch_size: 32
+eval_batch_size: 32
+eval_interval: 2
 optimizer:
   module: ".torch"
   name: "AdamW"

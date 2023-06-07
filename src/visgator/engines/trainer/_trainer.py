@@ -250,14 +250,15 @@ class Trainer(Generic[_T]):
         train_batch_sampler = data.BatchSampler(
             train_sampler,
             batch_size=(
-                self._params.batch_size // self._params.gradient_accumulation_steps
+                self._params.train_batch_size
+                // self._params.gradient_accumulation_steps
             ),
             drop_last=True,
         )
 
         eval_batch_sampler = data.BatchSampler(
             eval_sampler,
-            batch_size=1,
+            batch_size=self._params.eval_batch_size,
             drop_last=False,
         )
 
@@ -280,8 +281,8 @@ class Trainer(Generic[_T]):
                 f"(eval) size: {len(eval_dataset)}"
             )
             self._logger.info(
-                f"\t(train) batch size: {self._params.batch_size} | "
-                "(eval) batch size: 1"
+                f"\t(train) batch size: {self._params.train_batch_size} | "
+                f"(eval) batch size: {self._params.eval_batch_size}"
             )
             self._logger.info(
                 "\t(train) gradient accumulation steps: "
@@ -289,7 +290,7 @@ class Trainer(Generic[_T]):
             )
 
     def _get_steps_per_epoch(self) -> int:
-        return len(self._train_loader) // self._params.batch_size
+        return len(self._train_loader) // self._params.gradient_accumulation_steps
 
     def _set_model(self, checkpoint: Optional[Checkpoint] = None) -> None:
         model: Model[_T] = Model.from_config(self._params.model)
@@ -408,7 +409,10 @@ class Trainer(Generic[_T]):
     def _log_statistics(self, epoch: int, elapsed: float, train: bool) -> None:
         self._logger.info("Statistics:")
         self._logger.info(f"\telapsed time: {elapsed:.2f} s.")
-        num_batches = len(self._train_loader) if train else len(self._eval_loader)
+        if train:
+            num_batches = self._params.train_batch_size
+        else:
+            num_batches = self._params.eval_batch_size
         self._logger.info(f"\ttime per batch: {elapsed / num_batches:.2f} s.")
 
         if train:
@@ -447,7 +451,7 @@ class Trainer(Generic[_T]):
 
         counter = tqdm(
             desc="Training",
-            total=self._get_steps_per_epoch() * self._params.batch_size,
+            total=self._get_steps_per_epoch() * self._params.train_batch_size,
         )
 
         with counter as progress_bar:
@@ -517,24 +521,31 @@ class Trainer(Generic[_T]):
         self._el_tracker.increment()
         self._em_tracker.increment()
 
-        batch: Batch
-        bboxes: BBoxes
-        device_type = "cuda" if self._device.is_cuda else "cpu"
-        for batch, bboxes in tqdm(self._eval_loader, desc="Evaluating"):
-            batch = batch.to(self._device.to_torch())
-            bboxes = bboxes.to(self._device.to_torch())
+        counter = tqdm(
+            desc="Evaluating",
+            total=len(self._eval_loader.dataset),  # type: ignore
+        )
 
-            with autocast(device_type, enabled=self._params.mixed_precision):
-                outputs = self._model(batch)
-                tmp_losses = self._criterion(outputs, bboxes)
-                self._el_tracker.update(tmp_losses)
+        with counter as progress_bar:
+            batch: Batch
+            bboxes: BBoxes
+            device_type = "cuda" if self._device.is_cuda else "cpu"
+            for batch, bboxes in self._eval_loader:
+                batch = batch.to(self._device.to_torch())
+                bboxes = bboxes.to(self._device.to_torch())
 
-            pred_bboxes = self._postprocessor(outputs)
-            self._em_tracker.update(
-                pred_bboxes.to_xyxy().normalize().tensor,
-                bboxes.to_xyxy().normalize().tensor,
-            )
-            # print(self._em_tracker.compute())
+                with autocast(device_type, enabled=self._params.mixed_precision):
+                    outputs = self._model(batch)
+                    tmp_losses = self._criterion(outputs, bboxes)
+                    self._el_tracker.update(tmp_losses)
+
+                pred_bboxes = self._postprocessor(outputs)
+                self._em_tracker.update(
+                    pred_bboxes.to_xyxy().normalize().tensor,
+                    bboxes.to_xyxy().normalize().tensor,
+                )
+
+                progress_bar.update(len(batch))
 
         end = timer()
         elapsed = end - start
@@ -562,17 +573,17 @@ class Trainer(Generic[_T]):
 
             self._train_epoch(epoch)
 
-            if self._device.is_cuda:
-                torch.cuda.empty_cache()
+            if (epoch + 1) % self._params.eval_interval == 0:
+                if self._device.is_cuda:
+                    torch.cuda.empty_cache()
 
-            self._eval_epoch(epoch)
+                self._eval_epoch(epoch)
+                self._save_model(epoch)
 
             self._logger.info(f"Epoch {epoch + 1}/{self._params.num_epochs} finished.")
 
             if (epoch + 1) % self._params.checkpoint_interval == 0:
                 self._save_checkpoint(epoch)
-
-            self._save_model(epoch)
 
         end = timer()
         elapsed = end - start
@@ -589,12 +600,18 @@ class Trainer(Generic[_T]):
         best_metrics, best_epoch = self._em_tracker.best_metric(True)  # type: ignore
         self._logger.info("\tbest metrics:")
         for key, value in best_metrics.items():
-            self._logger.info(f"\t\t{key}: {value:.4f} | epoch: {best_epoch[key]}")
+            self._logger.info(
+                f"\t\t{key}: {value:.4f} | "
+                f"epoch: {(best_epoch[key] + 1) * self._params.eval_interval}"
+            )
 
         best_losses = self._el_tracker.best_loss()
         self._logger.info("\tbest losses:")
         for key, (value, epoch) in best_losses.items():
-            self._logger.info(f"\t\t{key}: {value:.4f} | epoch: {epoch}")
+            self._logger.info(
+                f"\t\t{key}: {value:.4f} | "
+                f"epoch: {(epoch + 1) * self._params.eval_interval}"
+            )
 
     def run(self) -> None:
         self._setup_launch()

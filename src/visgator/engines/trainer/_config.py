@@ -116,7 +116,8 @@ class Params:
     """Parameters for training."""
 
     num_epochs: int
-    batch_size: int
+    train_batch_size: int
+    eval_batch_size: int
     dataset: DatasetConfig = serde.field(
         serializer=DatasetConfig.to_dict,
         deserializer=DatasetConfig.from_dict,
@@ -137,6 +138,7 @@ class Params:
     seed: int = 3407
     compile: bool = True
     checkpoint_interval: int = 1
+    eval_interval: int = 1
     gradient_accumulation_steps: int = 1
     device: Optional[str] = None
     mixed_precision: bool = True
@@ -161,15 +163,21 @@ class Params:
                 f"{self.checkpoint_interval}. Must be greater than 0."
             )
 
-        if self.batch_size < 1:
+        if self.train_batch_size < 1:
             raise ValueError(
-                f"Invalid batch size: {self.batch_size}. Must be greater than 0."
+                f"Invalid batch size: {self.train_batch_size}. Must be greater than 0."
             )
 
-        if self.batch_size % self.gradient_accumulation_steps != 0:
+        if self.train_batch_size % self.gradient_accumulation_steps != 0:
             raise ValueError(
-                f"Invalid batch size: {self.batch_size}. Must be divisible by "
+                f"Invalid batch size: {self.train_batch_size}. Must be divisible by "
                 f"gradient accumulation steps: {self.gradient_accumulation_steps}."
+            )
+
+        if self.eval_interval < 1 or self.eval_interval > self.num_epochs:
+            raise ValueError(
+                "Invalid eval interval: "
+                f"{self.eval_interval}. Must be between 1 and {self.num_epochs}."
             )
 
     @classmethod

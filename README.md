@@ -84,9 +84,11 @@ wandb:
 dir: str # Output directory, default: "output"
 debug: bool # Whether to run in debug mode, default: false. This flag will be overwritten if the --debug flag is passed to the script.
 num_epochs: int # Number of epochs
-batch_size: int # Batch size
+train_batch_size: int # Batch size for training
+eval_batch_size: int # Batch size for evaluation
 seed: int # Seed, default: 3407
 compile: bool # Whether to compile the model, default: false
+eval_interval: int # Interval between evaluations, default: 1
 checkpoint_interval: int # Interval between checkpoints, default: 1
 gradient_accumulation_steps: int # Gradient accumulation steps, default: 1
 device: str | None # Device, default: None. If None, the device will be automatically selected (CUDA if available, CPU otherwise).

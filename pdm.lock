@@ -564,6 +564,11 @@ requires_python = ">=3.6"
 summary = "YAML parser and emitter for Python"
 
 [[package]]
+name = "ratelimit"
+version = "2.2.1"
+summary = "API rate limit decorator"
+
+[[package]]
 name = "regex"
 version = "2023.3.23"
 requires_python = ">=3.8"
@@ -793,6 +798,11 @@ dependencies = [
     "torch>=1.7",
     "torchvision",
 ]
+
+[[package]]
+name = "tls-client"
+version = "0.2.1"
+summary = "Advanced Python HTTP Client."
 
 [[package]]
 name = "tokenizers"
@@ -1031,7 +1041,7 @@ summary = "A built-package format for Python"
 lock_version = "4.2"
 cross_platform = true
 groups = ["default", "lint", "types"]
-content_hash = "sha256:18f478850f4b9a89f64595115bb2d63a03cfef75b30102add6d8a3550a52f6f3"
+content_hash = "sha256:307f08f8c9900e2f31e527e7c7c5de26891ba40dd58cfa8a17c93766b9066dbb"
 
 [metadata.files]
 "appdirs 1.4.4" = [
@@ -1980,6 +1990,9 @@ content_hash = "sha256:18f478850f4b9a89f64595115bb2d63a03cfef75b30102add6d8a3550
     {url = "https://files.pythonhosted.org/packages/f8/54/799b059314b13e1063473f76e908f44106014d18f54b16c83a16edccd5ec/PyYAML-6.0-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:d4b0ba9512519522b118090257be113b9468d804b19d63c71dbcf4a48fa32358"},
     {url = "https://files.pythonhosted.org/packages/fc/48/531ecd926fe0a374346dd811bf1eda59a95583595bb80eadad511f3269b8/PyYAML-6.0-cp311-cp311-win32.whl", hash = "sha256:bfaef573a63ba8923503d27530362590ff4f576c626d86a9fed95822a8255fd7"},
 ]
+"ratelimit 2.2.1" = [
+    {url = "https://files.pythonhosted.org/packages/ab/38/ff60c8fc9e002d50d48822cc5095deb8ebbc5f91a6b8fdd9731c87a147c9/ratelimit-2.2.1.tar.gz", hash = "sha256:af8a9b64b821529aca09ebaf6d8d279100d766f19e90b5059ac6a718ca6dee42"},
+]
 "regex 2023.3.23" = [
     {url = "https://files.pythonhosted.org/packages/03/86/4a27b8135ec8e1e16ee1fcabe5123d879064eabf20aacf22daf794988474/regex-2023.3.23-cp39-cp39-musllinux_1_1_s390x.whl", hash = "sha256:cde09c4fdd070772aa2596d97e942eb775a478b32459e042e1be71b739d08b77"},
     {url = "https://files.pythonhosted.org/packages/06/64/ae837863a7490e30b5da4659f5d9709980e45031f1563c5a4d4bb6668a36/regex-2023.3.23-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:6560776ec19c83f3645bbc5db64a7a5816c9d8fb7ed7201c5bcd269323d88072"},
@@ -2485,6 +2498,10 @@ content_hash = "sha256:18f478850f4b9a89f64595115bb2d63a03cfef75b30102add6d8a3550
 "timm 0.9.2" = [
     {url = "https://files.pythonhosted.org/packages/29/90/94f5deb8d76e24a89813aef95e8809ca8fd7414490428480eda19b133d4a/timm-0.9.2-py3-none-any.whl", hash = "sha256:8da40cc58ed32b0622bf87d8714f9b7023398ba4cfa8fa678578d2aefde4a909"},
     {url = "https://files.pythonhosted.org/packages/90/79/f79ebb37aab0815a67e025d3fd2ae94b02a4d6078ba9ddc8aed9adc6fb25/timm-0.9.2.tar.gz", hash = "sha256:d0977cc5e02c69bda979fca8b52aa315a5f2cb64ebf8ad2c4631b1e452762c14"},
+]
+"tls-client 0.2.1" = [
+    {url = "https://files.pythonhosted.org/packages/31/00/73c6aa49f67c94e4a63e87194748f5c505b870bc3d8a32422ba8eb792803/tls_client-0.2.1.tar.gz", hash = "sha256:473fb4c671d9d4ca6b818548ab6e955640dd589767bfce520830c5618c2f2e2b"},
+    {url = "https://files.pythonhosted.org/packages/ca/6f/219d3d4a3eaf3def89482596cd29a280dcad19d92833ba3866053b435101/tls_client-0.2.1-py3-none-any.whl", hash = "sha256:124a710952b979d5e20b4e2b7879b7958d6e48a259d0f5b83101055eb173f0bd"},
 ]
 "tokenizers 0.13.3" = [
     {url = "https://files.pythonhosted.org/packages/01/89/c08d663466c0d2f270112736cc7e9f59f74d842a6ffcf3c0262184f0707c/tokenizers-0.13.3-cp38-cp38-macosx_10_11_x86_64.whl", hash = "sha256:8791dedba834c1fc55e5f1521be325ea3dafb381964be20684b92fdac95d79b7"},
