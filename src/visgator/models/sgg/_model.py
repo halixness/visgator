@@ -40,6 +40,7 @@ class Model(_Model[ModelOutput]):
         self._decoder = Decoder(config.decoder)
         self._same_entity_edge = nn.Parameter(torch.randn(1, config.decoder.hidden_dim))
 
+        self._proj = nn.Linear(config.head.hidden_dim, config.head.hidden_dim)
         self._regression_head = nn.Sequential(
             nn.Linear(config.head.hidden_dim, config.head.hidden_dim),
             nn.ReLU(),
@@ -111,6 +112,10 @@ class Model(_Model[ModelOutput]):
         padded_boxes = padded_boxes + offsets  # (BN, 4)
         padded_boxes = torch.sigmoid(padded_boxes)  # (BN, 4)
         boxes = BBoxes(padded_boxes, images_size, BBoxFormat.CXCYWH, True)  # (BN, 4)
+
+        nodes = graph.nodes(True)  # (B, N, D)
+        nodes = self._proj(nodes)  # (B, N, D)
+        graph = graph.new_like(nodes, graph.edges(True))
 
         sentences = torch.stack([txt.sentence for txt in text_embeddings])
         entity_mask = nn.utils.rnn.pad_sequence(
