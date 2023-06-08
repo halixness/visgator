@@ -53,9 +53,10 @@ class Graph:
                 if connection.end < entity:
                     continue
 
-                tmp = (detections.entities == connection.end).nonzero(as_tuple=True)[0]
+                device = detections.entities[0].device
+                tmp = (detections.entities == connection.end).nonzero(as_tuple=True)[0].to(device)
                 indexes = torch.cat(
-                    [torch.tensor([idx])[None].expand(1, len(tmp)), tmp[None]],
+                    [torch.tensor([idx])[None].expand(1, len(tmp)).to(device), tmp[None]],
                     dim=0,
                 )
 

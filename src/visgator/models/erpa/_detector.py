@@ -62,15 +62,16 @@ class Detector(nn.Module):
 
         detections: list[DetectionResults] = [None] * B  # type: ignore
         for sample_idx in range(B):
-            mask = masks[i]
-            detected_boxes = pred_boxes[sample_idx, mask]
-            logits = pred_logits[sample_idx, mask] > self._text_threshold
-            tokenized = self._gdino.tokenizer(sentences[sample_idx])
+            mask = masks[sample_idx] # B, 900
+            detected_boxes = pred_boxes[sample_idx, mask] # K, 4
+            logits = pred_logits[sample_idx, mask] > self._text_threshold # K, 256
+            tokenized = self._gdino.tokenizer(sentences[sample_idx]) # one sentence per batch
 
+            # repeats the same phrase for each bounding box detected
             phrases: list[str] = [
                 get_phrases_from_posmap(logit, tokenized, self._gdino.tokenizer)
                 for logit in logits
-            ]
+            ] # B,
 
             detected_entities: dict[str, list[int]] = {}
             for idx, phrase in enumerate(phrases):
@@ -80,13 +81,19 @@ class Detector(nn.Module):
             boxes = []
 
             for entity_idx, entity in enumerate(entities[sample_idx]):
-                if entity in detected_entities:
-                    for detection_idx in detected_entities[entity]:
+
+                matching_key = None
+                for key in detected_entities.keys():
+                    if entity in key: matching_key = key
+
+                if matching_key is not None:
+                    for detection_idx in detected_entities[matching_key]:
                         indexes.append(entity_idx)
                         boxes.append(detected_boxes[detection_idx])
                 else:
+                    # this can happen when the box/text threshold is too high
                     raise RuntimeError(f"Entity {entity} not detected.")
-
+                
             detections[sample_idx] = DetectionResults(
                 entities=torch.tensor(indexes, device=boxes[0].device),
                 boxes=BBoxes(

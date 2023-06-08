@@ -78,7 +78,7 @@ class Model(_Model[BBoxes]):
         B = len(graph)  # B
         N = max([nodes for nodes, _ in graph.sizes])  # N
 
-        padded_boxes = detections[0].boxes.tensor.new_zeros(B * N, 4)
+        padded_boxes = detections[0].boxes.tensor.new_ones(B * N, 4) # TODO: setting them to zeros causes nans
         images_size = detections[0].boxes.images_size.new_ones(B * N, 2)
 
         for idx in range(len(graph)):
