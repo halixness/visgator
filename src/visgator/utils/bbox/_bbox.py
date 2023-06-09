@@ -206,7 +206,8 @@ class BBoxes:
             )
         elif images_size.ndim == 1:
             images_size = images_size.unsqueeze(0).expand(len(boxes), -1)
-        self._images_size = images_size
+
+        self._images_size = images_size.to(boxes.device)
 
         self._format = format
         self._normalized = normalized
@@ -361,7 +362,7 @@ class BBoxes:
 
     def union(self, other: Self) -> Self:
         """Returns the union of the bounding boxes."""
-
+    
         if torch.any(self._images_size != other._images_size):
             raise ValueError("Bounding boxes must have the same image size.")
 

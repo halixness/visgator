@@ -13,6 +13,23 @@ from typing_extensions import Self
 
 from visgator.models import Config as _Config
 
+import enum
+
+
+class YOLOModel(enum.Enum):
+    NANO = "n"
+    SMALL = "s"
+    MEDIUM = "m"
+    LARGE = "l"
+    EXTRA = "x"
+
+    def weights(self) -> str:
+        return f"yolov8{self.value}.pt"
+
+    @classmethod
+    def from_str(cls, s: str) -> Self:
+        return cls[s.upper().strip()]
+    
 
 @serde.serde(type_check=serde.Strict)
 @dataclass(frozen=True)
@@ -40,6 +57,8 @@ class DetectorConfig:
     config: Path
     box_threshold: float = serde.field(default=0.35)
     text_threshold: float = serde.field(default=0.25)
+    
+    yolo: YOLOModel = serde.field(default=YOLOModel.MEDIUM)
 
     @classmethod
     def from_dict(cls, cfg: dict[str, Any]) -> Self:

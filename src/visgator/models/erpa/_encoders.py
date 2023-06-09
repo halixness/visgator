@@ -313,7 +313,7 @@ class TextEncoder(nn.Module):
 # ------------------------------------------------------------------------------
 
 
-def build_encoders(config: EncodersConfig) -> tuple[VisionEncoder, TextEncoder]:
+def build_encoders(config: EncodersConfig, return_model=False) -> tuple[VisionEncoder, TextEncoder]:
     model, _, preprocess = open_clip.create_model_and_transforms(
         config.model,
         pretrained=config.pretrained,
@@ -335,4 +335,7 @@ def build_encoders(config: EncodersConfig) -> tuple[VisionEncoder, TextEncoder]:
     vision = VisionEncoder(model.visual, config.hidden_dim, mean, std)
     text = TextEncoder(model, tokenizer, config.hidden_dim)
 
-    return vision, text
+    if return_model:
+        return vision, text, model, tokenizer
+    else:
+        return vision, text

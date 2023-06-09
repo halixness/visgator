@@ -21,6 +21,7 @@ from ._head import RegressionHead
 from ._misc import Graph, NestedGraph
 from ._postprocessor import PostProcessor
 
+import torch
 
 class Model(_Model[BBoxes]):
     def __init__(self, config: Config) -> None:
@@ -35,10 +36,11 @@ class Model(_Model[BBoxes]):
         self._postprocessor = PostProcessor()
 
         self._detector = Detector(config.detector)
-        self._vision, self._text = build_encoders(config.encoders)
+        self._vision, self._text, self._model, self._tokenizer = build_encoders(config.encoders, return_model=True)
         self._decoder = Decoder(config.decoder)
 
         self._head = RegressionHead(config.head)
+        
 
     @classmethod
     def from_config(cls, config: Config) -> Self:  # type: ignore
@@ -57,18 +59,31 @@ class Model(_Model[BBoxes]):
         return self._postprocessor
 
     def forward(self, batch: Batch) -> BBoxes:
+        
+        
         images = Nested4DTensor.from_tensors(
             [self._transform(sample.image) for sample in batch.samples]
         )
         img_tensor = images.tensor / 255.0
         images = Nested4DTensor(img_tensor, images.sizes, images.mask)
-
-        detections = self._detector(
+        
+        """
+        # Grounding DINO bboxes
+         detections = self._detector(
             images, [sample.caption for sample in batch.samples]
         )
+        """
+
+        detections = self._detector(
+            (batch, images),
+            (self._model, self._tokenizer)
+        )
+
+        # CLIP encoded img+text
         img_embeddings = self._vision(images)
         text_embeddings = self._text(batch)
 
+        # Constructing the batch graphs with entity embeddings
         graphs = [
             Graph.new(batch.samples[idx].caption, text_embeddings[idx], detections[idx])
             for idx in range(len(batch))
@@ -89,9 +104,16 @@ class Model(_Model[BBoxes]):
             padded_boxes[start:end] = boxes.tensor
             images_size[start:end] = boxes.images_size
 
+        # Free up space
+        del detections
+        del text_embeddings
+        torch.cuda.empty_cache()
+
+        # ERP-Cross Attention (img+text)
         boxes = BBoxes(padded_boxes, images_size, BBoxFormat.CXCYWH, True)  # (BN, 4)
         graph = self._decoder(img_embeddings, graph, boxes)
 
+        # ERP-Cross Attention (img+text)
         boxes = self._head(graph, img_embeddings.sizes)
         if not boxes.normalized:
             raise RuntimeError("Boxes must be normalized.")
