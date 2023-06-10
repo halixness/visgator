@@ -13,7 +13,7 @@ import serde
 from typing_extensions import Self
 
 from visgator.datasets import Config as _Config
-from visgator.utils.graph import SceneGraphParserType
+from visgator.utils.graph.parser import Config as ParserConfig
 
 
 class SplitProvider(enum.Enum):
@@ -33,9 +33,16 @@ class SplitProvider(enum.Enum):
 class GenerationConfig:
     """Configuration for RefCOCOg dataset generation."""
 
-    num_workers: Optional[int] = None
-    chunksize: int = 128
-    parser: SceneGraphParserType = SceneGraphParserType.SPACY
+    parser: ParserConfig = serde.field(
+        serializer=ParserConfig.to_dict,
+        deserializer=ParserConfig.from_dict,
+    )
+    start: int = 0
+    end: Optional[int] = None
+
+    def __post_init__(self) -> None:
+        if self.end is not None and self.end <= self.start:
+            raise ValueError("end must be greater than start.")
 
     @classmethod
     def from_dict(cls, cfg: dict[str, Any]) -> Self:
@@ -52,8 +59,8 @@ class Config(_Config):
 
     path: Path
     split_provider: SplitProvider
-    generation: GenerationConfig = serde.field(
-        default=GenerationConfig(),
+    generation: Optional[GenerationConfig] = serde.field(
+        default=None,
         serializer=GenerationConfig.to_dict,
         deserializer=GenerationConfig.from_dict,
     )

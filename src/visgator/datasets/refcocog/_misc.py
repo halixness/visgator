@@ -14,7 +14,7 @@ from typing_extensions import Self
 from visgator.datasets import Split
 from visgator.utils.batch import Caption
 
-from ._config import Config
+from ._config import SplitProvider
 
 
 @serde.serde(type_check=serde.Strict)
@@ -59,14 +59,12 @@ def _to_refcoco_split(split: Split) -> str:
             raise ValueError(f"Invalid split: {split}")
 
 
-def get_preprocessed_samples(
-    config: Config, splits: list[Split]
-) -> dict[Split, list[Sample]]:
-    refs_path = config.path / f"annotations/refs({config.split_provider}).p"
-    instances_path = config.path / "annotations/instances.json"
-    images_path = config.path / "images"
-
-    splits_str = [_to_refcoco_split(split) for split in splits]
+def get_original_samples(
+    path: Path, provider: SplitProvider
+) -> list[tuple[Sample, Split]]:
+    refs_path = path / f"annotations/refs({provider}).p"
+    instances_path = path / "annotations/instances.json"
+    images_path = path / "images"
 
     info: dict[str, Any] = {}
     with open(refs_path, "rb") as pf, open(instances_path, "r") as jf:
@@ -78,9 +76,6 @@ def get_preprocessed_samples(
         images[image["id"]] = images_path / image["file_name"]
 
     for ref in refs:
-        if ref["split"] not in splits_str:
-            continue
-
         sentences = [sent["raw"] for sent in ref["sentences"]]
         if info.get(ref["ann_id"]) is not None:
             info[ref["ann_id"]]["sentences"].extend(sentences)
@@ -95,29 +90,44 @@ def get_preprocessed_samples(
         if annotation["id"] in info:
             info[annotation["id"]]["bbox"] = annotation["bbox"]
 
-    samples: dict[Split, list[Sample]] = {}
+    samples = []
     for sample_info in info.values():
         split = sample_info["split"]
         path = sample_info["path"]
         bbox = sample_info["bbox"]
 
         for sent in sample_info["sentences"]:
-            sample = Sample(
-                path=path,
-                caption=Caption(sent),
-                bbox=bbox,
+            samples.append(
+                (
+                    Sample(path=path, caption=Caption(sent), bbox=bbox),
+                    split,
+                ),
             )
-
-            samples.setdefault(split, []).append(sample)
 
     return samples
 
 
-def get_processed_samples(
-    config: Config, splits: list[Split]
+def get_original_samples_by_split(
+    path: Path,
+    provider: SplitProvider,
+    splits: list[Split],
 ) -> dict[Split, list[Sample]]:
-    images_path = config.path / "images"
-    info_path = config.path / f"annotations/info_{config.split_provider}.json"
+    samples = get_original_samples(path, provider)
+
+    samples_by_split: dict[Split, list[Sample]] = {}
+    for sample, split in samples:
+        samples_by_split.setdefault(split, []).append(sample)
+
+    return {key: value for key, value in samples_by_split.items() if key in splits}
+
+
+def get_generated_samples_by_split(
+    path: Path,
+    provider: SplitProvider,
+    splits: list[Split],
+) -> dict[Split, list[Sample]]:
+    images_path = path / "images"
+    info_path = path / f"annotations/info_{provider}.json"
 
     with open(info_path, "r") as f:
         info = json.load(f)

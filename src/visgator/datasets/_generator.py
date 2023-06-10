@@ -15,10 +15,11 @@ class Generator(abc.ABC):
     """Abstract base class for dataset preprocessing and generation."""
 
     @classmethod
-    def from_config(cls, config: Config) -> Self:
+    @abc.abstractmethod
+    def new(cls, config: Config) -> Self:
         """Instantiates a generator from a configuration."""
         sub_cls = get_subclass(config.module, cls)
-        return sub_cls.from_config(config)
+        return sub_cls.new(config)
 
     @abc.abstractmethod
     def generate(self) -> None:
