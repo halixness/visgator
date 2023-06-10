@@ -154,7 +154,7 @@ For each training sample (image, caption):
 4. Attend to all the ERP sequences (each is a sequence of text-informed visual tokens) in addition to a learnable regression token and project this to predict the final bounding box ([ERP-Attention](#erpattention)).
 
 ### <a name="preprocessing"></a> 1. Preprocessing
-The dataset is initially pre-processed to expand captions to [SceneGraphs](https://en.wikipedia.org/wiki/Scene_graph). With `visgator.datasets.refcocog._generator.Generator.generate()`, each image annotation is parsed through a `visgator.utils.graph.SpacySceneGraphParser` ([reference](https://github.com/vacancy/SceneGraphParser)): entities and relationships between them are identified and stored in a graph object. The generator encodes each dataset sample as a tuple of `(image_path, caption, graph)`.
+The dataset is initially pre-processed to expand captions to [SceneGraphs](https://en.wikipedia.org/wiki/Scene_graph). With `visgator.datasets.refcocog._generator.Generator.generate()`, each image annotation is parsed through a `visgator.utils.graph.SpacySceneGraphParser` ([reference](https://github.com/vacancy/SceneGraphParser)) or a Large Language Model ([reference](https://huggingface.co/tiiuae/falcon-7b-instruct)): entities and relationships between them are identified and stored in a graph object. The generator encodes each dataset sample as a tuple of `(image_path, caption, graph)`.
 
 ```python -m visgator --phase generate --config config/example.yaml```
 
@@ -212,9 +212,6 @@ In each ERP, a gaussian heatmap is computed for each entity bounding box. The un
 ### <a name="erpattention"></a> 4. ERP-Attention
 The batch NestedGraph is eventually processed by the `visgator.models.erpa._head.RegressionHead`: each ERP token sequence is summed to a positional encoding (sequence-wise). A stack of self-attention layers attends to the sequence of concatenated ERPs, in addition to a learnable token. The latter is eventually projected linearly to predict the target bounding box (`visgator.models.erpa._head.RegressionHead.forward()`). 
 
-
-
-
 ## <a name="framework"></a> Framework
 
 ### <a name="data"></a> Data processing
@@ -226,7 +223,7 @@ A `visgator.datasets._dataset.Dataset` is a general class representating a datas
         bboxes = [bbox for _, bbox in batch]
         return Batch(samples), BBoxes.from_bboxes(bboxes)
 ```
-A `visgator.datasets.refcocog._generator.Generator` (in this case specific to the RefCOCOg dataset) is a module dedacted to the extraction of SceneGraphs from each image caption, written to an annotation file to use at training time.
+A `visgator.datasets.refcocog._generator.Generator` (in this case specific to the RefCOCOg dataset) is a module dedicated to the extraction of SceneGraphs from each image caption, written to an annotation file to use at training time.
 ```
   def generate(self) -> None:
       split_samples = get_preprocessed_samples(
@@ -237,11 +234,13 @@ A `visgator.datasets.refcocog._generator.Generator` (in this case specific to th
       parser = SpacySceneGraphParser()
 
       output: dict[str, list] = {}  # type: ignore
+      # For each split
       for split, samples in split_samples.items():
           split_output: list[dict] = []  # type: ignore
           output[str(split)] = split_output
-
+          # For each sample
           for sample in tqdm(samples, desc=f"Generating {split} split"):
+              # Sentence to SceneGraph
               graph = parser.parse(sample.caption.sentence)
               new_sample = {
                   "image": sample.path.name,
@@ -258,10 +257,13 @@ A `visgator.datasets.refcocog._generator.Generator` (in this case specific to th
 ```
 
 ### <a name="training"></a> Training logic
-
-
-### <a name="optimization"></a> Optimization
-
+The module `visgator.engines.trainer._trainer.Trainer` handles the procedure by initially setting the preliminary components:
+- Setting the dataloaders (based on `refcocog.Generator`) with `Trainer._set_loaders()`
+- Setting the model with `Trainer._set_model(checkpoints)`: `models.erpa` by default (ERP-Attention).
+- Setting the optimizer with `Trainer._set_optimizer()`: by default it's `AdamW` with `lr = 1e-3`
+- Setting the learning rate scheduler with `Trainer._set_lr_scheduler()`: default `step_size = 1` and `gamma = 0.1`
+- Setting the gradient scaler with `Trainer._set_scaler(checkpoint)`: [GradScaler](https://pytorch.org/docs/stable/amp.html) allows to avoid the problem of underflow in gradients through scaling. We include an automatic procedure for Mixed Precision computing.
+- Setting the metrics with `Trainer._set_metrics()`: `F1-Score` and `Generalized IoU` by default. 
 
 ### <a name="evaluation"></a> Evaluation
 
