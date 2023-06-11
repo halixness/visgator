@@ -108,7 +108,8 @@ def get_preprocessed_samples(
                 bbox=bbox,
             )
 
-            samples.setdefault(split, []).append(sample)
+            if len(Caption(sent).graph.entities) > 0 and len(Caption(sent).graph.relations) > 0:
+                samples.setdefault(split, []).append(sample)
 
     return samples
 
@@ -139,6 +140,8 @@ def get_processed_samples(
                 bbox=bbox,
             )
 
-            samples.setdefault(split, []).append(sample)
-
+            # Remove any sample with no entities found (parsing problem)
+            if len(caption.graph.entities) > 0 and len(caption.graph.relations) > 0:
+                samples.setdefault(split, []).append(sample)
+            
     return samples
