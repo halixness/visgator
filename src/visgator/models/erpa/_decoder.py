@@ -37,43 +37,21 @@ class Decoder(nn.Module):
     ) -> NestedGraph:
         H, W = images.shape[2:]
 
-        # Problem found: edge_index can point to samples out of the boxes tensor. Probs because we have discarded some samples
-        # print(f"\n----nested graph edge index: {graph._edge_index}")
-        # print(f"boxes shape : {boxes._boxes.shape}\n----")
-
         # (entity1, entity2), edges
         edge_index = graph.edge_index(False)  # (2 BE)
 
-        # Filter to avoid out of bounds
-        # Filtering leads to tensors of odd shapes which causes a problem in the union
-        edge_mask = edge_index < boxes._boxes.shape[0]
-        new_edge_index = None
-        for k, ind in enumerate(edge_index):
-            if new_edge_index == None: new_edge_index = ind[edge_mask[k]].unsqueeze(0)
-            else: new_edge_index = torch.concat((new_edge_index, ind[edge_mask[k]].unsqueeze(0)))
-        edge_index = new_edge_index
-
         # Select bboxes that have a connection
+        print(boxes[edge_index[0]])
         boxes1 = boxes[edge_index[0]]  # (BE 4)
         boxes2 = boxes[edge_index[1]]  # (BE 4)
     
         union_boxes = boxes1.union(boxes2)  # (BE 4)
-
-        print(f"\nboxes1: {boxes1._boxes.shape}")
-        print(f"boxes2: {boxes2._boxes.shape}")
-        print(f"union: {union_boxes._boxes.shape}")
-        print(f"boxes: {boxes._boxes.shape}")
 
         heatmaps = self._gaussian_heatmaps(boxes, (H, W))  # (BN HW)
         union_heatmaps = self._gaussian_heatmaps(union_boxes, (H, W)) # (BE, HW)
         heatmaps1 = heatmaps[edge_index[0]]  # (BE HW)
         heatmaps2 = heatmaps[edge_index[1]]  # (BE HW)
         
-        print(f"heatmaps1: {heatmaps1.shape}")
-        print(f"heatmaps2: {heatmaps2.shape}")
-        print(f"union_heatmaps: {union_heatmaps.shape}")
-        print(f"edge_index : {edge_index}")
-
         edge_heatmaps = torch.maximum(
             torch.maximum(heatmaps1, heatmaps2),
             union_heatmaps,
@@ -82,8 +60,6 @@ class Decoder(nn.Module):
         heatmaps = torch.log(heatmaps + 1e-8)  # (BN HW)
         edge_heatmaps = torch.log(edge_heatmaps + 1e-8)  # (BE HW)
         
-        print(f"node_heatmaps: {heatmaps.shape}")
-        print(f"edge_heatmaps: {edge_heatmaps.shape}")
 
         node_heatmaps = heatmaps.view(len(graph), -1, H * W)  # (B N HW)
         edge_heatmaps = edge_heatmaps.view(len(graph), -1, H * W)  # (B E HW)
