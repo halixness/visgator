@@ -6,6 +6,7 @@ import argparse
 import json
 from pathlib import Path
 from typing import Any
+import os
 
 from ruamel.yaml import YAML
 
@@ -15,6 +16,8 @@ from visgator.engines.evaluator import Config as EvaluatorConfig
 from visgator.engines.evaluator import Evaluator
 from visgator.engines.trainer import Config as TrainerConfig
 from visgator.engines.trainer import Trainer
+
+os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
 
 
 def get_arg_parser() -> argparse.ArgumentParser:

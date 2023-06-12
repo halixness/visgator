@@ -9,7 +9,7 @@ wandb:
   enabled: false
 dataset:
   module: ".refcocog"
-  path: "./data/refcocog"
+  path: "../refcocog"
   split_provider: "umd"
 model:
   module: ".erpa"
@@ -37,8 +37,8 @@ model:
 seed: 42
 compile: False
 num_epochs: 3
-train_batch_size: 32
-eval_batch_size: 32
+train_batch_size: 8
+eval_batch_size: 8
 eval_interval: 2
 optimizer:
   module: ".torch"
