@@ -37,8 +37,8 @@ model:
 seed: 42
 compile: False
 num_epochs: 3
-train_batch_size: 8
-eval_batch_size: 8
+train_batch_size: 4
+eval_batch_size: 4
 eval_interval: 2
 optimizer:
   module: ".torch"

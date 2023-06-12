@@ -21,7 +21,6 @@ from ._head import RegressionHead
 from ._misc import Graph, pad_sequences
 from ._postprocessor import PostProcessor
 
-
 class Model(_Model[BBoxes]):
     def __init__(self, config: Config) -> None:
         super().__init__()

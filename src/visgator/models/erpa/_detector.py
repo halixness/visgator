@@ -32,7 +32,7 @@ class Detector(nn.Module):
         self._text_threshold = config.text_threshold
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self._txt_similarity_threshold = 0.5
-        self._detection_threshold = 0.2
+        self._detection_threshold = 0.1
 
         self._detector_processor = OwlViTProcessor.from_pretrained("google/owlvit-base-patch32", torch_dtype=torch.float16)
         self._detector_model = OwlViTForObjectDetection.from_pretrained("google/owlvit-base-patch32", torch_dtype=torch.float16)
@@ -58,13 +58,14 @@ class Detector(nn.Module):
             entities[i] = [entity.head.lower().strip() for entity in graph.entities]
 
         # Object detection (open-vocabulary)
-        inputs = self._detector_processor(text=entities, images=images, return_tensors="pt").to(self.device)
-        detector_results = self._detector_model(**inputs)
+        with torch.no_grad():
+            inputs = self._detector_processor(text=entities, images=images, return_tensors="pt").to(self.device)
+            detector_results = self._detector_model(**inputs)
 
-        # Target image sizes (height, width) to rescale box predictions [batch_size, 2]
-        target_sizes = torch.Tensor([image.size for image in images]).to(self.device)
-        # Convert outputs (bounding boxes and class logits) to COCO API
-        results = self._detector_processor.post_process_object_detection(outputs=detector_results, target_sizes=target_sizes)
+            # Target image sizes (height, width) to rescale box predictions [batch_size, 2]
+            target_sizes = torch.Tensor([image.size for image in images]).to(self.device)
+            # Convert outputs (bounding boxes and class logits) to COCO API
+            results = self._detector_processor.post_process_object_detection(outputs=detector_results, target_sizes=target_sizes)
 
         # For each result
         detections: list[DetectionResults] = [None] * B  # type: ignore
@@ -74,25 +75,34 @@ class Detector(nn.Module):
             
             matched_indices = []
             matched_boxes = []
+            
+            print(f"----\nresults[sample_idx]: \t{results[sample_idx]}")
 
             # Check identified identities by score
             for box, score, label in zip(boxes, scores, labels):
                 box = [round(i, 2) for i in box.tolist()]
+                print(f"Detected {entities[sample_idx][label]} with confidence {round(score.item(), 3)} at location {box}")
                 if score >= self._detection_threshold:
-                    matched_boxes.append(box)
+                    matched_boxes.append(torch.tensor(box))
                     matched_indices.append(label) # entity index
 
-            raise Exception(torch.tensor(matched_boxes).shape)
+            print(matched_boxes)
 
             detections[sample_idx] = DetectionResults(
                 entities=torch.tensor(matched_indices, device=self.device, dtype=torch.int),
                 boxes=BBoxes(
-                    boxes=torch.tensor(matched_boxes),
+                    boxes=torch.stack(matched_boxes).to(self.device),
                     images_size=images[sample_idx].size,
                     format=BBoxFormat.XYXY,  # CXCYWH
                     normalized=False, # TODO: check
                 ),
             )
+
+        del inputs
+        del detector_results
+        del target_sizes
+        del results
+        torch.cuda.empty_cache()
 
         return detections
     
