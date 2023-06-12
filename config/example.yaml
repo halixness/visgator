@@ -34,12 +34,14 @@ model:
   criterion:
     l1_weight: 1.0 # default
     giou_weight: 1.0 # default
+gradient_accumulation_steps: 8
+mixed_precision: true
 seed: 42
 compile: False
-num_epochs: 3
-train_batch_size: 4
-eval_batch_size: 4
-eval_interval: 2
+num_epochs: 10
+train_batch_size: 32
+eval_batch_size: 32
+eval_interval: 1
 optimizer:
   module: ".torch"
   name: "AdamW"

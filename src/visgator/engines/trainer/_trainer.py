@@ -499,6 +499,15 @@ class Trainer(Generic[_T]):
                     )
 
                 progress_bar.update(len(batch))
+                
+                del batch
+                del bboxes
+                del outputs
+                del loss
+
+                # Empty cache at each sample
+                if self._device.is_cuda:
+                    torch.cuda.empty_cache()
 
         self._lr_scheduler.step_after_epoch()
 
@@ -567,7 +576,7 @@ class Trainer(Generic[_T]):
 
         for epoch in range(start_epoch, self._params.num_epochs):
             self._logger.info(f"Epoch {epoch + 1}/{self._params.num_epochs} started.")
-
+            
             if self._device.is_cuda:
                 torch.cuda.empty_cache()
 
