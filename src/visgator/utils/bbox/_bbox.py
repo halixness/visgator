@@ -362,7 +362,7 @@ class BBoxes:
 
     def union(self, other: Self) -> Self:
         """Returns the union of the bounding boxes."""
-    
+
         if torch.any(self._images_size != other._images_size):
             raise ValueError("Bounding boxes must have the same image size.")
 

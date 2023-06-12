@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import enum
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -12,8 +13,6 @@ import serde
 from typing_extensions import Self
 
 from visgator.models import Config as _Config
-
-import enum
 
 
 class YOLOModel(enum.Enum):
@@ -29,7 +28,7 @@ class YOLOModel(enum.Enum):
     @classmethod
     def from_str(cls, s: str) -> Self:
         return cls[s.upper().strip()]
-    
+
 
 @serde.serde(type_check=serde.Strict)
 @dataclass(frozen=True)
@@ -57,7 +56,7 @@ class DetectorConfig:
     config: Path
     box_threshold: float = serde.field(default=0.35)
     text_threshold: float = serde.field(default=0.25)
-    
+
     yolo: YOLOModel = serde.field(default=YOLOModel.MEDIUM)
 
     @classmethod

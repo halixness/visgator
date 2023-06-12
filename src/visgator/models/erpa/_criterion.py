@@ -2,7 +2,7 @@
 ##
 ##
 
-import torch.nn.functional as F
+import torch
 from jaxtyping import Float
 from torch import Tensor
 
@@ -28,13 +28,11 @@ class Criterion(_Criterion[BBoxes]):
         ]
 
     def forward(self, output: BBoxes, target: BBoxes) -> dict[str, Float[Tensor, ""]]:
-        output = output.to_xyxy().normalize()
-        target = target.to_xyxy().normalize()
+        out_boxes = output.to_xyxy().normalize().tensor
+        tgt_boxes = target.to_xyxy().normalize().tensor
 
-        l1_loss = F.l1_loss(output.tensor, target.tensor)
-        gious_loss = -ops.generalized_box_iou_pairwise(
-            output.tensor, target.tensor
-        ).mean()
+        l1_loss = torch.cdist(out_boxes, tgt_boxes, p=1).diagonal().mean()
+        gious_loss = -ops.generalized_box_iou_pairwise(out_boxes, tgt_boxes).mean()
 
         return {
             "L1": l1_loss,

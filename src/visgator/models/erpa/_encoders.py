@@ -313,7 +313,9 @@ class TextEncoder(nn.Module):
 # ------------------------------------------------------------------------------
 
 
-def build_encoders(config: EncodersConfig, return_model=False) -> tuple[VisionEncoder, TextEncoder]:
+def build_encoders(
+    config: EncodersConfig, return_model=False
+) -> tuple[VisionEncoder, TextEncoder]:
     model, _, preprocess = open_clip.create_model_and_transforms(
         config.model,
         pretrained=config.pretrained,

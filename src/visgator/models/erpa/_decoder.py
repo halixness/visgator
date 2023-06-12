@@ -41,17 +41,16 @@ class Decoder(nn.Module):
         edge_index = graph.edge_index(False)  # (2 BE)
 
         # Select bboxes that have a connection
-        print(boxes[edge_index[0]])
         boxes1 = boxes[edge_index[0]]  # (BE 4)
         boxes2 = boxes[edge_index[1]]  # (BE 4)
-    
+
         union_boxes = boxes1.union(boxes2)  # (BE 4)
 
         heatmaps = self._gaussian_heatmaps(boxes, (H, W))  # (BN HW)
-        union_heatmaps = self._gaussian_heatmaps(union_boxes, (H, W)) # (BE, HW)
+        union_heatmaps = self._gaussian_heatmaps(union_boxes, (H, W))  # (BE, HW)
         heatmaps1 = heatmaps[edge_index[0]]  # (BE HW)
         heatmaps2 = heatmaps[edge_index[1]]  # (BE HW)
-        
+
         edge_heatmaps = torch.maximum(
             torch.maximum(heatmaps1, heatmaps2),
             union_heatmaps,
@@ -59,7 +58,6 @@ class Decoder(nn.Module):
 
         heatmaps = torch.log(heatmaps + 1e-8)  # (BN HW)
         edge_heatmaps = torch.log(edge_heatmaps + 1e-8)  # (BE HW)
-        
 
         node_heatmaps = heatmaps.view(len(graph), -1, H * W)  # (B N HW)
         edge_heatmaps = edge_heatmaps.view(len(graph), -1, H * W)  # (B E HW)
