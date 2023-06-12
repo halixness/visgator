@@ -70,32 +70,42 @@ class Detector(nn.Module):
         # For each result
         detections: list[DetectionResults] = [None] * B  # type: ignore
 
+        
         for sample_idx in range(B):
             boxes, scores, labels = results[sample_idx]["boxes"], results[sample_idx]["scores"], results[sample_idx]["labels"]
             
             matched_indices = []
             matched_boxes = []
-            
-            print(f"----\nresults[sample_idx]: \t{results[sample_idx]}")
+            height, width = images[sample_idx].size
 
             # Check identified identities by score
-            for box, score, label in zip(boxes, scores, labels):
+            for j, (box, score, label) in enumerate(zip(boxes, scores, labels)):
                 box = [round(i, 2) for i in box.tolist()]
-                print(f"Detected {entities[sample_idx][label]} with confidence {round(score.item(), 3)} at location {box}")
                 if score >= self._detection_threshold:
                     matched_boxes.append(torch.tensor(box))
-                    matched_indices.append(label) # entity index
+                    matched_indices.append(label)
+                # not detected => suppose the entire image
+                else:
+                    matched_boxes.append(torch.tensor([0, 0, width-1, height-1]).to(self.device))
+                    matched_indices.append(j) # entity index
+               
+            # if the detector hasn't identified an object => whole image as bounding box
+            if len(boxes) == 0:
+                for entity_idx, entity in enumerate(entities[sample_idx]):
+                    matched_indices.append(entity_idx)
+                    matched_boxes.append(torch.tensor([0, 0, width-1, height-1]).to(self.device))
+            
 
-            print(matched_boxes)
+            boxes = BBoxes(
+                boxes=torch.stack(matched_boxes).to(self.device),
+                images_size=images[sample_idx].size,
+                format=BBoxFormat.XYXY,
+                normalized=False,
+            ).to_cxcywh().normalize()
 
             detections[sample_idx] = DetectionResults(
                 entities=torch.tensor(matched_indices, device=self.device, dtype=torch.int),
-                boxes=BBoxes(
-                    boxes=torch.stack(matched_boxes).to(self.device),
-                    images_size=images[sample_idx].size,
-                    format=BBoxFormat.XYXY,  # CXCYWH
-                    normalized=False, # TODO: check
-                ),
+                boxes=boxes,
             )
 
         del inputs
