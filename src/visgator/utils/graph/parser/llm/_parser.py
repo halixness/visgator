@@ -20,13 +20,14 @@ class Parser(_Parser):
         self._name = config.model
 
         with open(config.prompt, "r") as f:
-            self._prompt: str = json.load(f)
+            self._prompt: str = f.read()
 
         tokenizer = AutoTokenizer.from_pretrained(config.model)
         model = AutoModelForCausalLM.from_pretrained(
             config.model,
             device_map="auto",
             trust_remote_code=True,
+            torch_dtype=torch.bfloat16,
         )
 
         self._pipe = pipeline(
@@ -85,7 +86,7 @@ class Parser(_Parser):
         example3 = {
             "entities": [
                 ("Skateboarder", "Skateboarder"),
-                ("green clothes", "green"),
+                ("green clothes", "clothes"),
             ],
             "relations": [
                 (0, "in", 1),
@@ -130,15 +131,14 @@ class Parser(_Parser):
             prompts,
             max_length=1000,
             num_return_sequences=1,
-            do_sample=True,
-            top_k=10,
-            return_text=True,
+            do_sample=False,
+            # top_k=10,
             return_full_text=False,
         )
 
         for output in generator:
             generated = output[0]["generated_text"]
-            generated = generated.strip()
+            generated = generated.split("\n")[0]
             gen_json = json.loads(generated)
 
             entities = []

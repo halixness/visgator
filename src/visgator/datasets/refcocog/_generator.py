@@ -110,7 +110,9 @@ class Generator(_Generator):
                     outputs.setdefault(str(split), []).append(
                         {
                             "image": sample.path.name,
-                            "caption": Caption(sample.caption.sentence, graph),
+                            "caption": Caption(
+                                sample.caption.sentence, graph
+                            ).to_dict(),
                             "bbox": sample.bbox,
                         }
                     )
