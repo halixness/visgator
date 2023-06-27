@@ -44,7 +44,7 @@ class Detector(nn.Module):
         batch, nested_images = data
         clip, tokenizer = model
 
-        # Preprocessing & YOLO
+        # Preprocessing
         images = [self._toPIL(sample.image) for sample in batch.samples]
         captions = [sample.caption for sample in batch.samples]
         
@@ -70,9 +70,8 @@ class Detector(nn.Module):
         # For each result
         detections: list[DetectionResults] = [None] * B  # type: ignore
 
-        
         for sample_idx in range(B):
-            boxes, scores, labels = results[sample_idx]["boxes"], results[sample_idx]["scores"], results[sample_idx]["labels"]
+            boxes, scores, labels = results[sample_idx]["boxes"].detach(), results[sample_idx]["scores"].detach(), results[sample_idx]["labels"].detach()
             
             matched_indices = []
             matched_boxes = []
@@ -86,14 +85,14 @@ class Detector(nn.Module):
                     matched_indices.append(label)
                 # not detected => suppose the entire image
                 else:
-                    matched_boxes.append(torch.tensor([0, 0, width-1, height-1]).to(self.device))
+                    matched_boxes.append(torch.tensor([0, 0, width-1, height-1]))
                     matched_indices.append(j) # entity index
                
             # if the detector hasn't identified an object => whole image as bounding box
             if len(boxes) == 0:
                 for entity_idx, entity in enumerate(entities[sample_idx]):
                     matched_indices.append(entity_idx)
-                    matched_boxes.append(torch.tensor([0, 0, width-1, height-1]).to(self.device))
+                    matched_boxes.append(torch.tensor([0, 0, width-1, height-1]))
             
 
             boxes = BBoxes(

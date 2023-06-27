@@ -9,6 +9,7 @@ from pathlib import Path
 from timeit import default_timer as timer
 from typing import Generic, Optional, TypeVar
 
+import gc
 import torch
 import torchmetrics as tm
 import wandb
@@ -471,12 +472,27 @@ class Trainer(Generic[_T]):
                 batch = batch.to(self._device.to_torch())
                 bboxes = bboxes.to(self._device.to_torch())
 
+                """
+                print("-" * 30)
+                t = torch.cuda.get_device_properties(0).total_memory
+                r = torch.cuda.memory_reserved(0)
+                a = torch.cuda.memory_allocated(0)
+                f = r-a  # free inside reserved
+
+                print(f"Allocated (occupied): \t{a}")
+                print(f"Reserved-allocayed: \t{f}")
+                """
+                        
                 with autocast(device_type, enabled=self._params.mixed_precision):
                     outputs = self._model(batch)
                     tmp_losses = self._criterion(outputs, bboxes)
                     losses = self._tl_tracker(tmp_losses)
                     loss = losses.total / self._params.gradient_accumulation_steps
 
+                # garbage collection from fwd pass
+                # if (idx + 1) % self._params.gradient_accumulation_steps == 0:
+                gc.collect() 
+                
                 self._scaler.scale(loss).backward()
 
                 if (idx + 1) % self._params.gradient_accumulation_steps == 0:
@@ -491,6 +507,9 @@ class Trainer(Generic[_T]):
                     self._optimizer.zero_grad()
                     self._lr_scheduler.step_after_batch()
 
+                    if self._device.is_cuda:
+                        torch.cuda.empty_cache()
+
                 with torch.no_grad():
                     pred_bboxes = self._postprocessor(outputs)
                     self._tm_tracker.update(
@@ -499,15 +518,6 @@ class Trainer(Generic[_T]):
                     )
 
                 progress_bar.update(len(batch))
-                
-                del batch
-                del bboxes
-                del outputs
-                del loss
-
-                # Empty cache at each sample
-                if self._device.is_cuda:
-                    torch.cuda.empty_cache()
 
         self._lr_scheduler.step_after_epoch()
 
@@ -576,11 +586,11 @@ class Trainer(Generic[_T]):
 
         for epoch in range(start_epoch, self._params.num_epochs):
             self._logger.info(f"Epoch {epoch + 1}/{self._params.num_epochs} started.")
-            
+        
+            self._train_epoch(epoch)
+
             if self._device.is_cuda:
                 torch.cuda.empty_cache()
-
-            self._train_epoch(epoch)
 
             if (epoch + 1) % self._params.eval_interval == 0:
                 if self._device.is_cuda:

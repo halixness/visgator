@@ -1,6 +1,10 @@
 ##
 ##
 ##
+# TODO: there is a memory leak somewhere.
+#       After 10k fwd passes, the memory saturates apparently.
+#       helpful: https://discuss.pytorch.org/t/memory-leak-debugging-and-common-causes/67339
+#       Or either there is a batch with image size very large and/or long captions.
 
 from typing import Optional
 
@@ -58,11 +62,13 @@ class Model(_Model[BBoxes]):
         return self._postprocessor
 
     def forward(self, batch: Batch) -> BBoxes:
+
         images = Nested4DTensor.from_tensors(
             [self._transform(sample.image) for sample in batch.samples]
         )
         img_tensor = images.tensor / 255.0
         images = Nested4DTensor(img_tensor, images.sizes, images.mask)
+
         detections = self._detector((batch, images), (self._model, self._tokenizer))
 
         # CLIP encoded img+text
