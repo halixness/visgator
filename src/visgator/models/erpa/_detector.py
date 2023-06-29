@@ -7,6 +7,7 @@ import torch
 import torchvision.transforms as T
 from torch import Tensor, nn
 from transformers import OwlViTProcessor, OwlViTForObjectDetection
+import numpy as np
 
 from visgator.utils.batch import Caption
 from visgator.utils.bbox import BBoxes, BBoxFormat
@@ -33,6 +34,7 @@ class Detector(nn.Module):
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self._txt_similarity_threshold = 0.5
         self._detection_threshold = 0.1
+        self._BOX_LIMIT = 50
 
         self._detector_processor = OwlViTProcessor.from_pretrained("google/owlvit-base-patch32", torch_dtype=torch.float16)
         self._detector_model = OwlViTForObjectDetection.from_pretrained("google/owlvit-base-patch32", torch_dtype=torch.float16)
@@ -72,10 +74,17 @@ class Detector(nn.Module):
 
         for sample_idx in range(B):
             boxes, scores, labels = results[sample_idx]["boxes"].detach(), results[sample_idx]["scores"].detach(), results[sample_idx]["labels"].detach()
-            
+
             matched_indices = []
             matched_boxes = []
             height, width = images[sample_idx].size
+
+            # If detections are too many => select tok K first
+            if len(boxes) > self._BOX_LIMIT:
+                idx = np.argpartition(scores.cpu().numpy(), -self._BOX_LIMIT)[-self._BOX_LIMIT:]
+                boxes = boxes[idx]
+                scores = scores[idx]
+                labels = labels[idx]
 
             # Check identified identities by score
             for j, (box, score, label) in enumerate(zip(boxes, scores, labels)):
@@ -86,14 +95,15 @@ class Detector(nn.Module):
                 # not detected => suppose the entire image
                 else:
                     matched_boxes.append(torch.tensor([0, 0, width-1, height-1]))
-                    matched_indices.append(j) # entity index
+                    matched_indices.append(label) # entity index
+
+            assert len(matched_boxes) == len(matched_indices) and len(matched_boxes) <= self._BOX_LIMIT
                
             # if the detector hasn't identified an object => whole image as bounding box
             if len(boxes) == 0:
                 for entity_idx, entity in enumerate(entities[sample_idx]):
                     matched_indices.append(entity_idx)
                     matched_boxes.append(torch.tensor([0, 0, width-1, height-1]))
-            
 
             boxes = BBoxes(
                 boxes=torch.stack(matched_boxes).to(self.device),

@@ -487,11 +487,7 @@ class Trainer(Generic[_T]):
                     outputs = self._model(batch)
                     tmp_losses = self._criterion(outputs, bboxes)
                     losses = self._tl_tracker(tmp_losses)
-                    loss = losses.total / self._params.gradient_accumulation_steps
-
-                # garbage collection from fwd pass
-                # if (idx + 1) % self._params.gradient_accumulation_steps == 0:
-                gc.collect() 
+                    loss = losses.total / self._params.gradient_accumulation_steps 
                 
                 self._scaler.scale(loss).backward()
 
@@ -507,8 +503,9 @@ class Trainer(Generic[_T]):
                     self._optimizer.zero_grad()
                     self._lr_scheduler.step_after_batch()
 
-                    if self._device.is_cuda:
-                        torch.cuda.empty_cache()
+                    # Memory cleanup
+                    gc.collect()
+                    if self._device.is_cuda: torch.cuda.empty_cache()
 
                 with torch.no_grad():
                     pred_bboxes = self._postprocessor(outputs)
