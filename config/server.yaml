@@ -1,0 +1,57 @@
+##
+##
+##
+
+wandb:
+  project: "owlvit"
+  entity: "visgator"
+  save: false
+  enabled: true
+dataset:
+  module: ".refcocog"
+  path: "../refcocog"
+  split_provider: "umd"
+model:
+  module: ".erpa"
+  hidden_dim: 256
+  encoders:
+    model: "ViT-B-32" # default
+    pretrained: "laion2b_s34b_b79k" # default
+  detector:
+    weights: "../gdino/weights/groundingdino_swinb_cogcoor.pth"
+    config: "../gdino/groundingdino/config/GroundingDINO_SwinB_cfg.py"
+    box_threshold: 0.35 # default
+    text_threshold: 0.25 # default
+  decoder:
+    num_layers: 3
+    num_heads: 8 # default
+    epsilon_layer_scale: 0.1 # default
+    dropout: 0.1 # default
+  head:
+    num_layers: 2
+    num_heads: 8 # default
+    dropout: 0.1 # default
+  criterion:
+    l1_weight: 1.0 # default
+    giou_weight: 1.0 # default
+mixed_precision: true
+seed: 42
+compile: False
+Bcompile: False
+num_epochs: 10
+gradient_accumulation_steps: 4
+train_batch_size: 32
+eval_batch_size: 8
+eval_interval: 1
+optimizer:
+  module: ".torch"
+  name: "AdamW"
+  args:
+    lr: 0.0001
+lr_scheduler:
+  module: ".torch"
+  name: "OneCycleLR"
+  args:
+    step_size: 1
+    gamma: 0.5
+

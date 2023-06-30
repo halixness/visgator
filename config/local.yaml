@@ -3,10 +3,10 @@
 ##
 
 wandb:
-  project: "test"
+  project: "OwLViT"
   entity: "visgator"
   save: false
-  enabled: false
+  enabled: true
 dataset:
   module: ".refcocog"
   path: "../refcocog"
@@ -34,22 +34,22 @@ model:
   criterion:
     l1_weight: 1.0 # default
     giou_weight: 1.0 # default
-gradient_accumulation_steps: 8
 mixed_precision: true
 seed: 42
 compile: False
 num_epochs: 10
+gradient_accumulation_steps: 8
 train_batch_size: 32
-eval_batch_size: 32
+eval_batch_size: 4
 eval_interval: 1
 optimizer:
   module: ".torch"
   name: "AdamW"
   args:
-    lr: 0.001
+    lr: 0.0001
 lr_scheduler:
   module: ".torch"
   name: "StepLR"
   args:
     step_size: 1
-    gamma: 0.1
+    gamma: 0.5
