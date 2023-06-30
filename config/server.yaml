@@ -35,23 +35,20 @@ model:
     l1_weight: 1.0 # default
     giou_weight: 1.0 # default
 mixed_precision: true
-seed: 42
-compile: False
-Bcompile: False
-num_epochs: 10
+seed: 3407
+num_epochs: 24
 gradient_accumulation_steps: 4
 train_batch_size: 32
 eval_batch_size: 8
-eval_interval: 1
+eval_interval: 4
 optimizer:
   module: ".torch"
   name: "AdamW"
   args:
-    lr: 0.0001
+    lr: 0.001
 lr_scheduler:
   module: ".torch"
   name: "OneCycleLR"
   args:
-    step_size: 1
-    gamma: 0.5
+    max_lr: 0.001
 
