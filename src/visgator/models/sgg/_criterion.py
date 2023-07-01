@@ -82,18 +82,18 @@ class Criterion(_Criterion[ModelOutput]):
         matching_loss.masked_fill_(output.mask, torch.inf)  # (B, N)
         idx = torch.min(matching_loss, dim=1)[1]  # (B,)
 
-        mask = output.mask.clone()  # (B, N)
+        mask = torch.zeros_like(output.mask)  # (B, N)
         mask[torch.arange(B), idx] = True  # (B, N)
 
         nodes = output.graph.nodes(True)  # (B, N, D)
 
         query = output.sentences  # (B, D)
-        pos_keys = nodes[torch.arange(B), idx]  # (B, D)
+        pos_keys = nodes[mask]  # (B, D)
         neg_keys = nodes[~mask]  # (M, D)
         info_nce_loss = self._info_nce_loss(query, pos_keys, neg_keys)
 
-        l1_loss = l1_loss[torch.arange(B), idx].mean()
-        giou_loss = giou_loss[torch.arange(B), idx].mean()
+        l1_loss = l1_loss[mask].mean()
+        giou_loss = giou_loss[mask].mean()
 
         return {
             "L1": l1_loss,

@@ -2,8 +2,6 @@
 ##
 ##
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -40,6 +38,7 @@ class DetectorConfig:
     config: Path
     box_threshold: float = serde.field(default=0.35)
     text_threshold: float = serde.field(default=0.25)
+    max_detections: int = serde.field(default=50)
 
     @classmethod
     def from_dict(cls, cfg: dict[str, Any]) -> Self:

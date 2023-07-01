@@ -15,7 +15,7 @@ from ._config import DecoderConfig
 from ._misc import NestedGraph
 from ._position import (
     EntitySpatialEncodings,
-    GaussianHeatmaps,
+    LogGaussianHeatmaps,
     RelationSpatialEncondings,
 )
 
@@ -31,7 +31,7 @@ class Decoder(nn.Module):
         # self._patch_encondings = PatchSpatialEncodings(config.hidden_dim)
         self._node_encodings = EntitySpatialEncodings(config.hidden_dim)
         self._edge_encodings = RelationSpatialEncondings(config.hidden_dim)
-        self._gaussian_heatmaps = GaussianHeatmaps()
+        self._gaussian_heatmaps = LogGaussianHeatmaps()
 
         self._layers = nn.ModuleList(
             [DecoderLayer(config) for _ in range(config.num_layers)]
@@ -59,8 +59,8 @@ class Decoder(nn.Module):
             union_heatmaps,
         )  # (BE HW)
 
-        heatmaps = torch.log(heatmaps + 1e-8)  # (BN HW)
-        union_heatmaps = torch.log(union_heatmaps + 1e-8)  # (BE HW)
+        # heatmaps = torch.log(heatmaps + 1e-8)  # (BN HW)
+        # union_heatmaps = torch.log(union_heatmaps + 1e-8)  # (BE HW)
 
         node_heatmaps = heatmaps.view(len(graph), -1, H * W)  # (B N HW)
         edge_heatmaps = edge_heatmaps.view(len(graph), -1, H * W)  # (B E HW)

@@ -11,7 +11,7 @@ from torch import Tensor
 from typing_extensions import Self
 
 from visgator.utils.batch import Caption
-from visgator.utils.bbox import BBoxes
+from visgator.utils.bbox import BBoxes, BBoxFormat
 
 
 @dataclass(frozen=True)
@@ -53,13 +53,17 @@ class Graph:
             entity: int = detection.item()
             for connection in graph.connections(entity):
                 tmp = (detections.entities == connection.end).nonzero(as_tuple=True)[0]
+                tmp = tmp[None]
                 indexes = torch.cat(
-                    [torch.tensor([idx])[None].expand(1, len(tmp)), tmp[None]],
+                    [
+                        torch.tensor([idx], device=tmp.device)[None].expand_as(tmp),
+                        tmp,
+                    ],
                     dim=0,
                 )
 
                 edge_index_list.append(indexes)
-                edge_rel_index_list.extend([connection.relation] * len(tmp))
+                edge_rel_index_list.extend([connection.relation] * tmp.size(1))
 
         same_entity_edge_index_list = []
         num_relations = embeddings.relations.shape[0]
@@ -111,43 +115,6 @@ class NestedGraph:
         self._edges = edges
         self._edge_index = edge_index
         self._sizes = sizes
-
-    @classmethod
-    def from_graphs(cls, graphs: list[Graph]) -> Self:
-        """Creates a NestedGraph from a list of Graphs."""
-
-        batch = len(graphs)
-        sizes = [(graph.nodes.shape[0], graph.edges.shape[0]) for graph in graphs]
-        max_nodes = max([nodes for nodes, _ in sizes])
-        max_edges = max([edges for _, edges in sizes])
-
-        nodes = graphs[0].nodes.new_zeros(batch, max_nodes, graphs[0].nodes.shape[1])
-        for i, graph in enumerate(graphs):
-            nodes[i, : graph.nodes.shape[0]] = graph.nodes
-
-        edges = graphs[0].edges.new_zeros(batch, max_edges, graphs[0].edges.shape[1])
-        for i, graph in enumerate(graphs):
-            edges[i, : graph.edges.shape[0]] = graph.edges
-
-        """edge_index = graphs[0].edge_index.new_empty(batch, 2, max_edges)
-        for i, graph in enumerate(graphs):
-            num_nodes = graph.nodes.shape[0]
-
-            edge_index[i, :, : graph.edge_index.shape[1]] = graph.edge_index
-            edge_index[i, 0, graph.edge_index.shape[1] :] = num_nodes
-            edge_index[i, 1, graph.edge_index.shape[1] :] = num_nodes"""
-
-        edge_index = graphs[0].edge_index.new_empty(2, batch * max_edges)
-        for i, graph in enumerate(graphs):
-            start = i * max_edges
-            middle = start + graph.edge_index.shape[1]
-            end = start + max_edges
-
-            edge_index[:, start:middle] = graph.edge_index + i * max_nodes
-            edge_index[0, middle:end] = graph.nodes.shape[0] + i * max_nodes
-            edge_index[1, middle:end] = graph.nodes.shape[0] + i * max_nodes
-
-        return cls(nodes, edges, edge_index, sizes)
 
     def new_like(
         self,
@@ -235,6 +202,65 @@ class NestedGraph:
 
     def __len__(self) -> int:
         return len(self._sizes)
+
+
+def pad_sequences(
+    detections: list[DetectionResults],
+    graphs: list[Graph],
+) -> tuple[BBoxes, NestedGraph, Bool[Tensor, "B N+1"]]:
+    if len(detections) != len(graphs):
+        raise ValueError(
+            f"The number of detections ({len(detections)}) must be equal "
+            f"to the number of graphs ({len(graphs)})"
+        )
+
+    batch = len(detections)
+    sizes = [(graph.nodes.shape[0], graph.edges.shape[0]) for graph in graphs]
+    max_nodes = max([nodes for nodes, _ in sizes]) + 1
+    max_edges = max([edges for _, edges in sizes])
+
+    # We add one to the number of max_nodes to prevent the situation in which
+    # the graph with max_nodes is not the graph with max_edges.
+    # If we did not do this, when padding the edge_index we would add an edge
+    # between two non existent padding nodes (graph.nodes.shape[0] == max_nodes)
+    # causing an index out of bounds error.
+
+    padded_boxes = detections[0].boxes.tensor.new_ones(batch * max_nodes, 4)
+    images_size = detections[0].boxes.images_size.new_ones(batch * max_nodes, 2)
+
+    nodes = graphs[0].nodes.new_zeros(batch, max_nodes, graphs[0].nodes.shape[1])
+    edges = graphs[0].edges.new_zeros(batch, max_edges, graphs[0].edges.shape[1])
+    edge_index = graphs[0].edge_index.new_empty(2, batch * max_edges)
+
+    mask = detections[0].entities.new_ones(batch, max_nodes, dtype=torch.bool)
+
+    for i, (detection, graph) in enumerate(zip(detections, graphs)):
+        nodes[i, : graph.nodes.shape[0]].copy_(graph.nodes)
+        edges[i, : graph.edges.shape[0]].copy_(graph.edges)
+
+        # Pad edge index
+        start = i * max_edges
+        middle = start + graph.edge_index.shape[1]
+        end = start + max_edges
+
+        edge_index[:, start:middle].copy_(graph.edge_index + i * max_nodes)
+        edge_index[0, middle:end] = graph.nodes.shape[0] + i * max_nodes
+        edge_index[1, middle:end] = graph.nodes.shape[0] + i * max_nodes
+
+        # Pad boxes
+        start = i * max_nodes
+        boxes = detection.boxes.to_cxcywh().normalize()
+        end = start + len(boxes)
+
+        padded_boxes[start:end].copy_(boxes.tensor)
+        images_size[start:end].copy_(boxes.images_size)
+
+        # Pad mask
+        mask[i, : detection.entities.shape[0]].copy_(detection.entities != 0)
+
+    boxes = BBoxes(padded_boxes, images_size, BBoxFormat.CXCYWH, True)
+
+    return boxes, NestedGraph(nodes, edges, edge_index, sizes), mask
 
 
 @dataclass(frozen=True)
