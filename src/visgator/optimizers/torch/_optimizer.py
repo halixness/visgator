@@ -50,4 +50,7 @@ class Optimizer(_Optimizer):
         if __name == "__class__":
             return self._optimizer.__class__
 
-        return super().__getattribute__(__name)
+        try:
+            return super().__getattribute__(__name)
+        except AttributeError:
+            return getattr(self._optimizer, __name)
