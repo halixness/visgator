@@ -1,10 +1,6 @@
 ##
 ##
 ##
-# TODO: there is a memory leak somewhere.
-#       After 10k fwd passes, the memory saturates apparently.
-#       helpful: https://discuss.pytorch.org/t/memory-leak-debugging-and-common-causes/67339
-#       Or either there is a batch with image size very large and/or long captions.
 
 from typing import Optional
 
@@ -19,11 +15,13 @@ from visgator.utils.transforms import Compose, Resize
 from ._config import Config
 from ._criterion import Criterion
 from ._decoder import Decoder
-from ._detector import Detector
 from ._encoders import build_encoders
+from ._gdino import GroundigDINODetector
 from ._head import RegressionHead
 from ._misc import Graph, pad_sequences
+from ._owlvit import OwlViTDetector
 from ._postprocessor import PostProcessor
+
 
 class Model(_Model[BBoxes]):
     def __init__(self, config: Config) -> None:
@@ -37,10 +35,14 @@ class Model(_Model[BBoxes]):
         self._criterion = Criterion(config.criterion)
         self._postprocessor = PostProcessor()
 
-        self._detector = Detector(config.detector)
-        self._vision, self._text, self._model, self._tokenizer = build_encoders(
-            config.encoders, return_model=True
-        )
+        self._gdino = None
+        self._owlvit = None
+        if config.detector.gdino is not None:
+            self._gdino = GroundigDINODetector(config.detector)
+        elif config.detector.owlvit is not None:
+            self._owlvit = OwlViTDetector(config.detector)
+
+        self._vision, self._text = build_encoders(config.encoders)
         self._decoder = Decoder(config.decoder)
 
         self._head = RegressionHead(config.head)
@@ -62,14 +64,20 @@ class Model(_Model[BBoxes]):
         return self._postprocessor
 
     def forward(self, batch: Batch) -> BBoxes:
-
         images = Nested4DTensor.from_tensors(
             [self._transform(sample.image) for sample in batch.samples]
         )
         img_tensor = images.tensor / 255.0
         images = Nested4DTensor(img_tensor, images.sizes, images.mask)
 
-        detections = self._detector((batch, images), (self._model, self._tokenizer))
+        if self._gdino is not None:
+            detections = self._gdino(
+                images, [sample.caption for sample in batch.samples]
+            )
+        elif self._owlvit is not None:
+            detections = self._owlvit(batch)
+        else:
+            raise RuntimeError("No detector is initialized.")
 
         # CLIP encoded img+text
         img_embeddings = self._vision(images)

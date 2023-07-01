@@ -4,30 +4,14 @@
 
 from __future__ import annotations
 
-import enum
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 import serde
 from typing_extensions import Self
 
 from visgator.models import Config as _Config
-
-
-class YOLOModel(enum.Enum):
-    NANO = "n"
-    SMALL = "s"
-    MEDIUM = "m"
-    LARGE = "l"
-    EXTRA = "x"
-
-    def weights(self) -> str:
-        return f"yolov8{self.value}.pt"
-
-    @classmethod
-    def from_str(cls, s: str) -> Self:
-        return cls[s.upper().strip()]
 
 
 @serde.serde(type_check=serde.Strict)
@@ -47,17 +31,49 @@ class EncodersConfig:
         return serde.to_dict(self)
 
 
+@dataclass(frozen=True)
+class GroundingDINOConfig:
+    weights: Path
+    config: Path
+
+    @classmethod
+    def from_dict(cls, cfg: dict[str, Any]) -> Self:
+        return serde.from_dict(cls, cfg)
+
+    def to_dict(self) -> dict[str, Any]:
+        return serde.to_dict(self)
+
+
 @serde.serde(type_check=serde.Strict)
 @dataclass(frozen=True)
 class DetectorConfig:
     """Configuration for object detector."""
 
-    weights: Path
-    config: Path
+    gdino: Optional[GroundingDINOConfig] = serde.field(
+        default=None,
+        serializer=GroundingDINOConfig.to_dict,
+        deserializer=GroundingDINOConfig.from_dict,
+    )
+    owlvit: Optional[str] = None
     box_threshold: float = serde.field(default=0.35)
     text_threshold: float = serde.field(default=0.25)
+    max_detections: int = serde.field(default=50)
 
-    yolo: YOLOModel = serde.field(default=YOLOModel.MEDIUM)
+    def __post_init__(self) -> None:
+        if self.box_threshold < 0 or self.box_threshold > 1:
+            raise ValueError("box_threshold must be between 0 and 1.")
+
+        if self.text_threshold < 0 or self.text_threshold > 1:
+            raise ValueError("text_threshold must be between 0 and 1.")
+
+        if self.max_detections < 1:
+            raise ValueError("max_detections must be positive.")
+
+        if self.gdino is None and self.owlvit is None:
+            raise ValueError("Either gdino or owlvit must be set.")
+
+        if self.gdino is not None and self.owlvit is not None:
+            raise ValueError("Only one of gdino or owlvit must be set.")
 
     @classmethod
     def from_dict(cls, cfg: dict[str, Any]) -> Self:

@@ -18,10 +18,15 @@ model:
     model: "ViT-B-32" # default
     pretrained: "laion2b_s34b_b79k" # default
   detector:
-    weights: "../gdino/weights/groundingdino_swinb_cogcoor.pth"
-    config: "../gdino/groundingdino/config/GroundingDINO_SwinB_cfg.py"
-    box_threshold: 0.35 # default
+    # to use GroundingDINO, leave the following lines
+    # to use OwLViT, comment the following lines and uncomment owlvit
+    gdino:
+      weights: "weights/groundingdino_swinb_cogcoor.pth"
+      config: "config/GroundingDINO_SwinB_cfg.py"
+    # owlvit: "google/owlvit-base-patch32"
+    box_threshold: 0.25 # default
     text_threshold: 0.25 # default
+    max_detections: 50 # default
   decoder:
     num_layers: 3
     num_heads: 8 # default
@@ -51,4 +56,3 @@ lr_scheduler:
   name: "OneCycleLR"
   args:
     max_lr: 0.001
-
