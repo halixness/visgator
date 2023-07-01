@@ -3,35 +3,27 @@
 ##
 
 wandb:
-  project: "OwLViT"
+  project: "gdino"
   entity: "visgator"
   save: false
-  enabled: true
+  enabled: false
 dataset:
   module: ".refcocog"
   path: "../refcocog"
   split_provider: "umd"
-  generation:
-    start: 0
-    end: 2
-    parser:
-      module: ".llm"
-      model: "tiiuae/falcon-7b-instruct"
-      batch_size: 2
-      prompt: "config/prompt.txt"
 model:
-  module: ".sgg"
-  hidden_dim: 8
+  module: ".erpa"
+  hidden_dim: 256
   encoders:
     model: "ViT-B-32" # default
     pretrained: "laion2b_s34b_b79k" # default
   detector:
     # to use GroundingDINO, leave the following lines
     # to use OwLViT, comment the following lines and uncomment owlvit
-    gdino:
-      weights: "weights/groundingdino_swinb_cogcoor.pth"
-      config: "config/GroundingDINO_SwinB_cfg.py"
-    # owlvit: "google/owlvit-base-patch32"
+    #gdino:
+    #  weights: "weights/groundingdino_swinb_cogcoor.pth"
+    #  config: "config/GroundingDINO_SwinB_cfg.py"
+    owlvit: "google/owlvit-base-patch32"
     box_threshold: 0.25 # default
     text_threshold: 0.25 # default
     max_detections: 50 # default
@@ -41,23 +33,25 @@ model:
     epsilon_layer_scale: 0.1 # default
     dropout: 0.1 # default
   head:
-    dropout: 0.1
+    num_layers: 2
+    num_heads: 8 # default
+    dropout: 0.1 # default
   criterion:
     l1_weight: 1.0 # default
     giou_weight: 1.0 # default
 mixed_precision: true
-seed: 42
-compile: False
-num_epochs: 10
-gradient_accumulation_steps: 8
+seed: 3407
+num_epochs: 24
+gradient_accumulation_steps: 16
 train_batch_size: 32
-eval_batch_size: 4
-eval_interval: 1
+eval_batch_size: 2
+eval_interval: 4
+compile: false
 optimizer:
   module: ".torch"
   name: "AdamW"
   args:
-    lr: 0.0001
+    lr: 0.001
 lr_scheduler:
   module: ".torch"
   name: "OneCycleLR"

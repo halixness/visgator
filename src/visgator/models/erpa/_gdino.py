@@ -26,6 +26,8 @@ class GroundigDINODetector(nn.Module):
 
         assert config.gdino is not None
 
+        self._dummy = nn.Parameter(torch.empty(0))
+
         self._mean = (0.485, 0.456, 0.406)
         self._std = (0.229, 0.224, 0.225)
 
@@ -130,8 +132,6 @@ class GroundigDINODetector(nn.Module):
                 captions[sample_idx].graph.entities  # type: ignore
             )
 
-            # (size - 1) / 2 / size = (size - 1/size) / 2
-
             for det_idx, det_name in enumerate(phrases):
                 if det_name in entities[sample_idx]:
                     for entity_idx in entities[sample_idx][det_name]:
@@ -151,7 +151,7 @@ class GroundigDINODetector(nn.Module):
                     indexes.append(entity_idx)
                     height, width = images.sizes[sample_idx]
                     box = torch.tensor(
-                        [0.0, 0.0, width - 1, height - 1], device=images.tensor.device
+                        [0.0, 0.0, width - 1, height - 1], device=self._dummy.device
                     )
                     box = box.unsqueeze(0)
                     box = ops.from_xyxy_to_cxcywh(box)
@@ -162,7 +162,7 @@ class GroundigDINODetector(nn.Module):
                     boxes.append(box)
 
             detections[sample_idx] = DetectionResults(
-                entities=torch.tensor(indexes, device=boxes[0].device),
+                entities=torch.tensor(indexes, device=self._dummy.device),
                 boxes=BBoxes(
                     boxes=torch.stack(boxes),
                     images_size=images.sizes[sample_idx],

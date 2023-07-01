@@ -46,6 +46,7 @@ gradient_accumulation_steps: 4
 train_batch_size: 32
 eval_batch_size: 8
 eval_interval: 4
+compile: false
 optimizer:
   module: ".torch"
   name: "AdamW"
