@@ -68,8 +68,12 @@ def generalized_box_iou_pairwise(
 
     # degenerate boxes gives inf / nan results
     # so do an early check
-    assert (boxes1[:, 2:] >= boxes1[:, :2]).all(), f"boxes1[:, 2:]: {boxes1[:, 2:]}\nboxes1[:, :2]: {boxes1[:, :2]}"
-    assert (boxes2[:, 2:] >= boxes2[:, :2]).all(), f"boxes2[:, 2:]: {boxes2[:, 2:]}\nboxes2[:, :2]: {boxes2[:, :2]}"
+    assert (
+        boxes1[:, 2:] >= boxes1[:, :2]
+    ).all(), f"boxes1[:, 2:]: {boxes1[:, 2:]}\nboxes1[:, :2]: {boxes1[:, :2]}"
+    assert (
+        boxes2[:, 2:] >= boxes2[:, :2]
+    ).all(), f"boxes2[:, 2:]: {boxes2[:, 2:]}\nboxes2[:, :2]: {boxes2[:, :2]}"
     assert boxes1.shape == boxes2.shape
     iou, union = box_iou_pairwise(boxes1, boxes2)  # [N,4]
 

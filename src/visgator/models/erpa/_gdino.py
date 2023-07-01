@@ -13,7 +13,7 @@ from torch import Tensor, nn
 from transformers import AutoTokenizer
 
 from visgator.utils.batch import Caption
-from visgator.utils.bbox import BBoxes, BBoxFormat
+from visgator.utils.bbox import BBoxes, BBoxFormat, ops
 from visgator.utils.torch import Nested4DTensor
 
 from ._config import DetectorConfig
@@ -130,6 +130,8 @@ class GroundigDINODetector(nn.Module):
                 captions[sample_idx].graph.entities  # type: ignore
             )
 
+            # (size - 1) / 2 / size = (size - 1/size) / 2
+
             for det_idx, det_name in enumerate(phrases):
                 if det_name in entities[sample_idx]:
                     for entity_idx in entities[sample_idx][det_name]:
@@ -147,7 +149,17 @@ class GroundigDINODetector(nn.Module):
             for entity_idx, found in enumerate(entities_found):
                 if not found:
                     indexes.append(entity_idx)
-                    boxes.append(torch.tensor([0.5, 0.5, 0.5, 0.5]))
+                    height, width = images.sizes[sample_idx]
+                    box = torch.tensor(
+                        [0.0, 0.0, width - 1, height - 1], device=images.tensor.device
+                    )
+                    box = box.unsqueeze(0)
+                    box = ops.from_xyxy_to_cxcywh(box)
+                    box = ops.normalize(
+                        box, torch.tensor([width, height], device=box.device)
+                    )
+                    box = box.squeeze(0)
+                    boxes.append(box)
 
             detections[sample_idx] = DetectionResults(
                 entities=torch.tensor(indexes, device=boxes[0].device),
