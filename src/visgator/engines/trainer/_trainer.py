@@ -360,7 +360,13 @@ class Trainer(Generic[_T]):
 
     def _set_scaler(self, checkpoint: Optional[Checkpoint]) -> None:
         enabled = self._params.mixed_precision and self._device.is_cuda
-        scaler = GradScaler(enabled=enabled)
+        if self._params.init_scale is None:
+            scaler = GradScaler(enabled=enabled)
+        else:
+            scaler = GradScaler(
+                init_scale=self._params.init_scale,
+                enabled=enabled,
+            )
 
         if checkpoint is not None:
             scaler.load_state_dict(checkpoint.scaler)
@@ -454,6 +460,7 @@ class Trainer(Generic[_T]):
             total=self._get_steps_per_epoch() * self._params.train_batch_size,
         )
 
+        self._optimizer.zero_grad()
         with counter as progress_bar:
             batch: Batch
             bboxes: BBoxes

@@ -142,6 +142,7 @@ class Params:
     gradient_accumulation_steps: int = 1
     device: Optional[str] = None
     mixed_precision: bool = True
+    init_scale: Optional[float] = None
     max_grad_norm: Optional[float] = None
 
     def __post_init__(self) -> None:
