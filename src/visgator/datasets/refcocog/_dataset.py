@@ -11,7 +11,7 @@ from visgator.utils.batch import BatchSample
 from visgator.utils.bbox import BBox, BBoxFormat
 
 from ._config import Config
-from ._misc import get_preprocessed_samples, get_processed_samples
+from ._misc import get_generated_samples_by_split, get_original_samples_by_split
 
 
 class Dataset(_Dataset):
@@ -21,9 +21,13 @@ class Dataset(_Dataset):
         processed_path = config.path / f"annotations/info_{config.split_provider}.json"
 
         if processed_path.exists():
-            samples = get_processed_samples(config, [split])[split]
+            samples = get_generated_samples_by_split(
+                config.path, config.split_provider, [split]
+            )[split]
         else:
-            samples = get_preprocessed_samples(config, [split])[split]
+            samples = get_original_samples_by_split(
+                config.path, config.split_provider, [split]
+            )[split]
 
         if debug:
             samples = samples[:100]

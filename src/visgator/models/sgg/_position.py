@@ -52,8 +52,8 @@ class PatchSpatialEncodings(nn.Module):
         return super().__call__(mask)  # type: ignore
 
 
-class GaussianHeatmaps(nn.Module):
-    """Gaussian heatmaps for 2D images."""
+class LogGaussianHeatmaps(nn.Module):
+    """Log Gaussian heatmaps for 2D images."""
 
     def __init__(self, beta: float = 1.0) -> None:
         super().__init__()
@@ -80,9 +80,9 @@ class GaussianHeatmaps(nn.Module):
         y = (coords[:, :, 0] - mean[:, 1].unsqueeze(-1)) ** 2
         y = y / (self._beta * (std[:, 1].unsqueeze(-1) ** 2))
 
-        heatmaps = torch.exp(-(x + y))  # (B, HW)
+        heatmaps = -(x + y)  # (B, HW)
 
-        return heatmaps
+        return heatmaps  # type: ignore
 
     def __call__(self, boxes: BBoxes, size: tuple[int, int]) -> Float[Tensor, "B HW"]:
         return super().__call__(boxes, size)  # type: ignore

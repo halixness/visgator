@@ -8,7 +8,7 @@ import open_clip
 import torch
 import torch.nn.functional as F
 import torchvision.transforms as T
-from jaxtyping import Bool, Float, Integer
+from jaxtyping import Bool, Float
 from open_clip import CLIP
 from open_clip.tokenizer import HFTokenizer
 from open_clip.transformer import (
@@ -249,7 +249,7 @@ class TextEncoder(nn.Module):
         for param in self.parameters():
             param.requires_grad = False
 
-    def _flatten(self, batch: Batch) -> Integer[Tensor, "N L"]:
+    def _flatten(self, batch: Batch) -> list[str]:
         texts = []
         for sample in batch:
             caption = sample.caption
@@ -268,7 +268,7 @@ class TextEncoder(nn.Module):
                 ]
             )
 
-        return self._tokenizer(texts).to(self._dummy.device)
+        return texts
 
     def _unflatten(self, batch: Batch, tokens: Tensor) -> list[CaptionEmbeddings]:
         captions = []
@@ -297,11 +297,11 @@ class TextEncoder(nn.Module):
 
         return captions
 
-    def forward(self, batch: Batch) -> list[CaptionEmbeddings]:
-        text = self._flatten(batch)
+    def encode_strs(self, strs: list[str]) -> Float[Tensor, "N D"]:
+        tokenized = self._tokenizer(strs).to(self._dummy.device)
 
         cast_dtype = self._transformer.get_cast_dtype()
-        x = self._token_emb(text).to(cast_dtype)
+        x = self._token_emb(tokenized).to(cast_dtype)
         x = x + self._positional_emb.to(cast_dtype)
 
         x = x.permute(1, 0, 2)  # NLD -> LND
@@ -309,8 +309,13 @@ class TextEncoder(nn.Module):
         x = x.permute(1, 0, 2)  # LND -> NLD
 
         x = self._final_ln(x)
-        x = x[torch.arange(x.shape[0]), text.argmax(-1)] @ self._text_projection
+        x = x[torch.arange(x.shape[0]), tokenized.argmax(-1)] @ self._text_projection
 
+        return x  # type: ignore
+
+    def forward(self, batch: Batch) -> list[CaptionEmbeddings]:
+        text = self._flatten(batch)
+        x = self.encode_strs(text)
         return self._unflatten(batch, x)
 
     def __call__(self, batch: Batch) -> list[CaptionEmbeddings]:

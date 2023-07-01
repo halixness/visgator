@@ -11,16 +11,24 @@ dataset:
   module: ".refcocog"
   path: "../refcocog"
   split_provider: "umd"
+  generation:
+    start: 0
+    end: 2
+    parser:
+      module: ".llm"
+      model: "tiiuae/falcon-7b-instruct"
+      batch_size: 2
+      prompt: "config/prompt.txt"
 model:
-  module: ".erpa"
-  hidden_dim: 256
+  module: ".sgg"
+  hidden_dim: 8
   encoders:
     model: "ViT-B-32" # default
     pretrained: "laion2b_s34b_b79k" # default
   detector:
     weights: "weights/groundingdino_swinb_cogcoor.pth"
     config: "config/GroundingDINO_SwinB_cfg.py"
-    box_threshold: 0.35 # default
+    box_threshold: 0.25 # default
     text_threshold: 0.25 # default
   decoder:
     num_layers: 3
@@ -28,9 +36,7 @@ model:
     epsilon_layer_scale: 0.1 # default
     dropout: 0.1 # default
   head:
-    num_layers: 2
-    num_heads: 8 # default
-    dropout: 0.1 # default
+    dropout: 0.1
   criterion:
     l1_weight: 1.0 # default
     giou_weight: 1.0 # default
@@ -49,7 +55,6 @@ optimizer:
     lr: 0.0001
 lr_scheduler:
   module: ".torch"
-  name: "StepLR"
+  name: "OneCycleLR"
   args:
-    step_size: 1
-    gamma: 0.5
+    max_lr: 0.001

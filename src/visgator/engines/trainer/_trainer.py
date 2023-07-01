@@ -2,6 +2,7 @@
 ##
 ##
 
+import gc
 import json
 import logging
 from datetime import datetime
@@ -9,7 +10,6 @@ from pathlib import Path
 from timeit import default_timer as timer
 from typing import Generic, Optional, TypeVar
 
-import gc
 import torch
 import torchmetrics as tm
 import wandb
@@ -361,7 +361,13 @@ class Trainer(Generic[_T]):
 
     def _set_scaler(self, checkpoint: Optional[Checkpoint]) -> None:
         enabled = self._params.mixed_precision and self._device.is_cuda
-        scaler = GradScaler(enabled=enabled)
+        if self._params.init_scale is None:
+            scaler = GradScaler(enabled=enabled)
+        else:
+            scaler = GradScaler(
+                init_scale=self._params.init_scale,
+                enabled=enabled,
+            )
 
         if checkpoint is not None:
             scaler.load_state_dict(checkpoint.scaler)
@@ -455,6 +461,7 @@ class Trainer(Generic[_T]):
             total=self._get_steps_per_epoch() * self._params.train_batch_size,
         )
 
+        self._optimizer.zero_grad()
         with counter as progress_bar:
             batch: Batch
             bboxes: BBoxes
@@ -482,13 +489,13 @@ class Trainer(Generic[_T]):
                 print(f"Allocated (occupied): \t{a}")
                 print(f"Reserved-allocayed: \t{f}")
                 """
-                        
+
                 with autocast(device_type, enabled=self._params.mixed_precision):
                     outputs = self._model(batch)
                     tmp_losses = self._criterion(outputs, bboxes)
                     losses = self._tl_tracker(tmp_losses)
-                    loss = losses.total / self._params.gradient_accumulation_steps 
-                
+                    loss = losses.total / self._params.gradient_accumulation_steps
+
                 self._scaler.scale(loss).backward()
 
                 if (idx + 1) % self._params.gradient_accumulation_steps == 0:
@@ -505,7 +512,8 @@ class Trainer(Generic[_T]):
 
                     # Memory cleanup
                     gc.collect()
-                    if self._device.is_cuda: torch.cuda.empty_cache()
+                    if self._device.is_cuda:
+                        torch.cuda.empty_cache()
 
                 with torch.no_grad():
                     pred_bboxes = self._postprocessor(outputs)
@@ -583,7 +591,7 @@ class Trainer(Generic[_T]):
 
         for epoch in range(start_epoch, self._params.num_epochs):
             self._logger.info(f"Epoch {epoch + 1}/{self._params.num_epochs} started.")
-        
+
             self._train_epoch(epoch)
 
             if self._device.is_cuda:

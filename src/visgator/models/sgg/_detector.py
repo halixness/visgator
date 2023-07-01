@@ -2,12 +2,15 @@
 ##
 ##
 
+import bisect
+
 import torch
+import torchvision.transforms.functional as F
 from groundingdino.models import GroundingDINO
 from groundingdino.util.inference import load_model
 from groundingdino.util.misc import NestedTensor
-from groundingdino.util.utils import get_phrases_from_posmap
 from torch import Tensor, nn
+from transformers import AutoTokenizer
 
 from visgator.utils.batch import Caption
 from visgator.utils.bbox import BBoxes, BBoxFormat
@@ -21,12 +24,8 @@ class Detector(nn.Module):
     def __init__(self, config: DetectorConfig) -> None:
         super().__init__()
 
-        mean = (0.485, 0.456, 0.406)
-        std = (0.229, 0.224, 0.225)
-        self.register_buffer("_mean", torch.tensor(mean).view(1, 3, 1, 1))
-        self.register_buffer("_std", torch.tensor(std).view(1, 3, 1, 1))
-        self._mean: Tensor  # just for type hinting
-        self._std: Tensor  # just for type hinting
+        self._mean = (0.485, 0.456, 0.406)
+        self._std = (0.229, 0.224, 0.225)
 
         self._gdino: GroundingDINO = load_model(str(config.config), str(config.weights))
         for param in self._gdino.parameters():
@@ -34,23 +33,46 @@ class Detector(nn.Module):
 
         self._box_threshold = config.box_threshold
         self._text_threshold = config.text_threshold
+        self._max_detections = config.max_detections
+
+    def _get_phrases_from_posmap(
+        self,
+        posmap: torch.BoolTensor,
+        tokenized: dict[str, Tensor],
+        tokenizer: AutoTokenizer,
+        left_idx: int = 0,
+        right_idx: int = 255,
+    ) -> str:
+        assert isinstance(posmap, torch.Tensor), "posmap must be torch.Tensor"
+        if posmap.dim() != 1:
+            raise ValueError("posmap must be 1-dim")
+
+        posmap[0 : left_idx + 1] = False
+        posmap[right_idx:] = False
+        non_zero_idx = posmap.nonzero(as_tuple=True)[0].tolist()
+        token_ids = [tokenized["input_ids"][i] for i in non_zero_idx]
+        return tokenizer.decode(token_ids)  # type: ignore
 
     def forward(
         self, images: Nested4DTensor, captions: list[Caption]
     ) -> list[DetectionResults]:
-        img_tensor = (images.tensor - self._mean) / self._std
+        img_tensor = F.normalize(images.tensor, self._mean, self._std)
         img_tensor.masked_fill_(images.mask.unsqueeze(1).expand(-1, 3, -1, -1), 0.0)
         images = Nested4DTensor(img_tensor, images.sizes, images.mask)
         B = len(captions)
 
-        entities: list[list[str]] = [None] * B  # type: ignore
-        sentences: list[str] = [None] * B  # type: ignore
+        entities: list[dict[str, list[int]]] = [{} for _ in range(B)]
+        sentences: list[str] = [""] * B
         for i, caption in enumerate(captions):
             graph = caption.graph
             assert graph is not None
 
-            entities[i] = [entity.head.lower().strip() for entity in graph.entities]
-            sentences[i] = " . ".join(entities[i]) + " ."
+            for entity_idx, entity in enumerate(graph.entities):
+                head = entity.head.lower().strip()
+                entities[i].setdefault(head, []).append(entity_idx)
+
+            sentences[i] = " . ".join(entities[i].keys()) + " ."
+        del i
 
         gdino_images = NestedTensor(images.tensor, images.mask)
         output = self._gdino(gdino_images, captions=sentences)
@@ -62,30 +84,62 @@ class Detector(nn.Module):
 
         detections: list[DetectionResults] = [None] * B  # type: ignore
         for sample_idx in range(B):
-            mask = masks[i]
+            mask = masks[sample_idx]
             detected_boxes = pred_boxes[sample_idx, mask]
-            logits = pred_logits[sample_idx, mask] > self._text_threshold
+            logits = pred_logits[sample_idx, mask]
+
+            if len(logits) > self._max_detections:
+                logits, indices = torch.topk(logits, self._max_detections)
+                detected_boxes = detected_boxes[indices]
+
             tokenized = self._gdino.tokenizer(sentences[sample_idx])
 
-            phrases: list[str] = [
-                get_phrases_from_posmap(logit, tokenized, self._gdino.tokenizer)
-                for logit in logits
+            sep_idx = [
+                i
+                for i in range(len(tokenized["input_ids"]))
+                if tokenized["input_ids"][i] in [101, 102, 1012]
             ]
 
-            detected_entities: dict[str, list[int]] = {}
-            for idx, phrase in enumerate(phrases):
-                detected_entities.setdefault(phrase, []).append(idx)
+            phrases: list[str] = []
+            for logit in logits:
+                max_idx = logit.argmax()
+                insert_idx = bisect.bisect_left(sep_idx, max_idx)
+                right_idx = sep_idx[insert_idx]
+                left_idx = sep_idx[insert_idx - 1]
+                phrases.append(
+                    self._get_phrases_from_posmap(
+                        logit > self._text_threshold,
+                        tokenized,
+                        self._gdino.tokenizer,
+                        left_idx,
+                        right_idx,
+                    ).replace(".", "")
+                )
 
             indexes = []
             boxes = []
+            entities_found: list[bool] = [False] * len(
+                captions[sample_idx].graph.entities  # type: ignore
+            )
 
-            for entity_idx, entity in enumerate(entities[sample_idx]):
-                if entity in detected_entities:
-                    for detection_idx in detected_entities[entity]:
+            for det_idx, det_name in enumerate(phrases):
+                if det_name in entities[sample_idx]:
+                    for entity_idx in entities[sample_idx][det_name]:
                         indexes.append(entity_idx)
-                        boxes.append(detected_boxes[detection_idx])
+                        boxes.append(detected_boxes[det_idx])
+                        entities_found[entity_idx] = True
                 else:
-                    raise RuntimeError(f"Entity {entity} not detected.")
+                    for entity_name, entity_idxs in entities[sample_idx].items():
+                        if det_name in entity_name:
+                            for entity_idx in entity_idxs:
+                                indexes.append(entity_idx)
+                                boxes.append(detected_boxes[det_idx])
+                                entities_found[entity_idx] = True
+
+            for entity_idx, found in enumerate(entities_found):
+                if not found:
+                    indexes.append(entity_idx)
+                    boxes.append(torch.tensor([0.5, 0.5, 0.5, 0.5]))
 
             detections[sample_idx] = DetectionResults(
                 entities=torch.tensor(indexes, device=boxes[0].device),

@@ -4,9 +4,9 @@
 
 import argparse
 import json
+import os
 from pathlib import Path
 from typing import Any
-import os
 
 from ruamel.yaml import YAML
 
@@ -60,7 +60,7 @@ def main() -> None:
             evaluator.run()
         case "generate":
             dataset_config = DatasetConfig.from_dict(cfg["dataset"])
-            generator = Generator.from_config(dataset_config)
+            generator = Generator.new(dataset_config)
             generator.generate()
         case _:
             raise ValueError(f"Unknown phase: {args.phase}.")
