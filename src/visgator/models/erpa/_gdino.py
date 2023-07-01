@@ -26,6 +26,8 @@ class GroundigDINODetector(nn.Module):
 
         assert config.gdino is not None
 
+        self._dummy = nn.Parameter(torch.empty(0))
+
         self._mean = (0.485, 0.456, 0.406)
         self._std = (0.229, 0.224, 0.225)
 
@@ -147,10 +149,10 @@ class GroundigDINODetector(nn.Module):
             for entity_idx, found in enumerate(entities_found):
                 if not found:
                     indexes.append(entity_idx)
-                    boxes.append(torch.tensor([0.5, 0.5, 0.5, 0.5]))
+                    boxes.append(torch.tensor([0.5, 0.5, 0.5, 0.5]).to(self._dummy.device))
 
             detections[sample_idx] = DetectionResults(
-                entities=torch.tensor(indexes, device=boxes[0].device),
+                entities=torch.tensor(indexes, device=self._dummy.device),
                 boxes=BBoxes(
                     boxes=torch.stack(boxes),
                     images_size=images.sizes[sample_idx],

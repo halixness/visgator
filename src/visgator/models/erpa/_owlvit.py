@@ -98,10 +98,10 @@ class OwlViTDetector(nn.Module):
             for entity_idx, found in enumerate(entities_found):
                 if not found:
                     matched_indices.append(entity_idx)
-                    matched_boxes.append(torch.tensor([0, 0, width - 1, height - 1]))
+                    matched_boxes.append(torch.tensor([0, 0, width - 1, height - 1]).to(self._dummy.device))
 
             boxes = BBoxes(
-                boxes=torch.stack(matched_boxes).to(self._dummy.device),
+                boxes=torch.stack(matched_boxes),
                 images_size=images[sample_idx].size,
                 format=BBoxFormat.XYXY,
                 normalized=False,
