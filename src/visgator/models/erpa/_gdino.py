@@ -156,7 +156,7 @@ class GroundigDINODetector(nn.Module):
                     box = box.unsqueeze(0)
                     box = ops.from_xyxy_to_cxcywh(box)
                     box = ops.normalize(
-                        box, torch.tensor([width, height], device=box.device)
+                        box, torch.tensor([[width, height]], device=box.device)
                     )
                     box = box.squeeze(0)
                     boxes.append(box)
