@@ -54,7 +54,7 @@ class DetectorConfig:
         serializer=GroundingDINOConfig.to_dict,
         deserializer=GroundingDINOConfig.from_dict,
     )
-    owlvit: Optional[str] = None
+    owlvit: Optional[str] = serde.field(default=None)
     box_threshold: float = serde.field(default=0.35)
     text_threshold: float = serde.field(default=0.25)
     max_detections: int = serde.field(default=50)

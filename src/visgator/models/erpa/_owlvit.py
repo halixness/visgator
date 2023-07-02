@@ -91,7 +91,7 @@ class OwlViTDetector(nn.Module):
             # Check identified identities by score
             for box, score, label in zip(boxes, scores, labels):
                 if score >= self._box_threshold:
-                    matched_boxes.append(torch.tensor(box))
+                    matched_boxes.append(box)
                     matched_indices.append(label)
                     entities_found[label] = True
 
@@ -99,7 +99,7 @@ class OwlViTDetector(nn.Module):
                 if not found:
                     matched_indices.append(entity_idx)
                     matched_boxes.append(
-                        torch.tensor([0, 0, width - 1, height - 1]).to(
+                        torch.tensor([0.0, 0.0, width - 1, height - 1]).to(
                             self._dummy.device
                         )
                     )

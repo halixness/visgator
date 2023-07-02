@@ -61,7 +61,7 @@ class GaussianHeatmaps(nn.Module):
         self._beta = beta
 
     def forward(self, boxes: BBoxes, size: tuple[int, int]) -> Float[Tensor, "B HW"]:
-        boxes = boxes.to_xyxy().denormalize()  # (B, 4)
+        boxes = boxes.to_cxcywh().denormalize()  # (B, 4)
 
         mean = boxes.tensor[:, :2]  # (B, 2)
         std = boxes.tensor[:, 2:]  # (B, 2)
