@@ -48,7 +48,9 @@ class OwlViTDetector(nn.Module):
         for i, caption in enumerate(captions):
             graph = caption.graph
             assert graph is not None
-            entities[i] = [entity.head.lower().strip() for entity in graph.entities]
+            entities[i] = [
+                f"a photo of {entity.head.lower().strip()}" for entity in graph.entities
+            ]
 
         # Object detection (open-vocabulary)
         inputs = self._preprocessor(
@@ -81,6 +83,11 @@ class OwlViTDetector(nn.Module):
 
             entities_found = [False] * len(entities[sample_idx])
 
+            idx = scores >= self._box_threshold
+            boxes = boxes[idx]
+            scores = scores[idx]
+            labels = labels[idx]
+
             # If detections are too many => select tok K first
             if len(boxes) > self._max_detections:
                 _, idx = torch.topk(scores, self._max_detections)
@@ -89,11 +96,10 @@ class OwlViTDetector(nn.Module):
                 labels = labels[idx]
 
             # Check identified identities by score
-            for box, score, label in zip(boxes, scores, labels):
-                if score >= self._box_threshold:
-                    matched_boxes.append(box)
-                    matched_indices.append(label)
-                    entities_found[label] = True
+            for box, label in zip(boxes, labels):
+                matched_boxes.append(box)
+                matched_indices.append(label)
+                entities_found[label] = True
 
             for entity_idx, found in enumerate(entities_found):
                 if not found:
