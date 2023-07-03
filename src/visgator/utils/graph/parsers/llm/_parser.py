@@ -10,7 +10,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 from typing_extensions import Self
 
 from visgator.utils.graph import Entity, Relation, SceneGraph
-from visgator.utils.graph.parser import Parser as _Parser
+from visgator.utils.graph.parsers import Parser as _Parser
 
 from ._config import Config
 

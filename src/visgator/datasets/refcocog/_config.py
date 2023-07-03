@@ -13,7 +13,7 @@ import serde
 from typing_extensions import Self
 
 from visgator.datasets import Config as _Config
-from visgator.utils.graph.parser import Config as ParserConfig
+from visgator.utils.graph.parsers import Config as ParserConfig
 
 
 class SplitProvider(enum.Enum):
