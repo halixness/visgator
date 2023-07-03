@@ -57,7 +57,10 @@ class LRScheduler(_LRSchduler):
         return self._scheduler.get_last_lr()[-1]
 
     def state_dict(self) -> dict[str, Any]:
-        return self._scheduler.state_dict()
+        state = self._scheduler.state_dict()
+        state.pop("anneal_func")
+
+        return state
 
     def load_state_dict(self, state_dict: dict[str, Any]) -> None:
         if self.name == "OneCycleLR":
