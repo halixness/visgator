@@ -9,7 +9,7 @@ from typing import Any
 import serde
 from typing_extensions import Self
 
-from visgator.utils.graph.parser import Config as _Config
+from visgator.utils.graph.parsers import Config as _Config
 
 
 @serde.serde(type_check=serde.Strict)

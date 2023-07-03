@@ -12,7 +12,7 @@ from visgator.datasets import Generator as _Generator
 from visgator.datasets import Split
 from visgator.utils.batch import Caption
 from visgator.utils.graph import SceneGraph
-from visgator.utils.graph.parser import Parser
+from visgator.utils.graph.parsers import Parser
 
 from ._config import Config
 from ._misc import Sample, get_original_samples
