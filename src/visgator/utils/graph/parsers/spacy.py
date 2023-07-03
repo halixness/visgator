@@ -33,6 +33,10 @@ class Parser(_Parser):
     def new(cls, config: Config) -> Self:  # type: ignore
         return cls(config)
 
+    @property
+    def name(self) -> str:
+        return "spaCy Scene Graph Parser"
+
     def parse(self, sentences: Iterable[str]) -> Generator[SceneGraph, None, None]:
         for sentence in sentences:
             graph = sng_parser.parse(sentence)
