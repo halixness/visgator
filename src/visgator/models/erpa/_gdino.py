@@ -20,7 +20,7 @@ from ._config import DetectorConfig
 from ._misc import DetectionResults
 
 
-class GroundigDINODetector(nn.Module):
+class GroundingDINODetector(nn.Module):
     def __init__(self, config: DetectorConfig) -> None:
         super().__init__()
 
@@ -99,7 +99,9 @@ class GroundigDINODetector(nn.Module):
             logits = pred_logits[sample_idx, mask]
 
             if len(logits) > self._max_detections:
-                logits, indices = torch.topk(logits, self._max_detections)
+                scores = logits.max(dim=1)[0]
+                indices = torch.topk(scores, self._max_detections)[1]
+                logits = logits[indices]
                 detected_boxes = detected_boxes[indices]
 
             tokenized = self._gdino.tokenizer(sentences[sample_idx])

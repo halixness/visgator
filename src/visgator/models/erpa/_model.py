@@ -16,7 +16,7 @@ from ._config import Config
 from ._criterion import Criterion
 from ._decoder import Decoder
 from ._encoders import build_encoders
-from ._gdino import GroundigDINODetector
+from ._gdino import GroundingDINODetector
 from ._head import RegressionHead
 from ._misc import Graph, pad_sequences
 from ._owlvit import OwlViTDetector
@@ -38,7 +38,7 @@ class Model(_Model[BBoxes]):
         self._gdino = None
         self._owlvit = None
         if config.detector.gdino is not None:
-            self._gdino = GroundigDINODetector(config.detector)
+            self._gdino = GroundingDINODetector(config.detector)
         elif config.detector.owlvit is not None:
             self._owlvit = OwlViTDetector(config.detector)
 
