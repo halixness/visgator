@@ -8,6 +8,7 @@ import torchvision.transforms as T
 from transformers import CLIPModel, CLIPProcessor
 from typing_extensions import Self
 from ultralytics import YOLO
+import torch
 
 from visgator.models import Criterion
 from visgator.models import Model as _Model
@@ -58,8 +59,9 @@ class Model(_Model[BBoxes]):
 
             if len(result.boxes) == 0:
                 # create a dummy bbox
-                tmp = BBox((0, 0, 0, 0), sample.image.shape[1:], BBoxFormat.XYXY, True)
-                boxes.append(tmp.to(self._clip.device))
+                box = torch.tensor([0, 0, 0, 0,]).to(self._clip.device)
+                tmp = BBox(box, sample.image.shape[1:], BBoxFormat.XYXY, True)
+                boxes.append(tmp)
                 continue
 
             for bbox in result.boxes:
