@@ -1,4 +1,4 @@
-<mxfile host="app.diagrams.net" modified="2023-07-11T14:50:09.782Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36 OPR/99.0.0.0" etag="lirHPnJ-oG8aRFV5LsNS" version="21.3.7" type="device">
+<mxfile host="app.diagrams.net" modified="2023-07-11T16:13:04.861Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36 OPR/99.0.0.0" etag="bxRTFCRr_JRUDyywQQBt" version="21.3.7" type="device">
   <diagram name="Pagina-1" id="rFU_sqioOXPZMRnYCsA3">
     <mxGraphModel dx="1249" dy="681" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="1" shadow="0">
       <root>
@@ -169,13 +169,13 @@
             <mxPoint x="681.87" y="297.63" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="9q3LpZvZRBrV1jGRHOvV-108" value="Updated SceneGraph" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=15;" vertex="1" parent="1">
+        <mxCell id="9q3LpZvZRBrV1jGRHOvV-108" value="Features-rich&lt;br&gt;SceneGraph" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=15;" vertex="1" parent="1">
           <mxGeometry x="743.49" y="161.5" width="100" height="30" as="geometry" />
         </mxCell>
         <mxCell id="9q3LpZvZRBrV1jGRHOvV-112" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=15;" edge="1" parent="1" source="9q3LpZvZRBrV1jGRHOvV-109" target="9q3LpZvZRBrV1jGRHOvV-111">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="9q3LpZvZRBrV1jGRHOvV-109" value="Graoh Self-Attention" style="rounded=1;whiteSpace=wrap;html=1;fontSize=15;" vertex="1" parent="1">
+        <mxCell id="9q3LpZvZRBrV1jGRHOvV-109" value="Graph &lt;br&gt;Self-Attention" style="rounded=1;whiteSpace=wrap;html=1;fontSize=15;" vertex="1" parent="1">
           <mxGeometry x="733.49" y="351.25" width="120" height="68.5" as="geometry" />
         </mxCell>
         <mxCell id="9q3LpZvZRBrV1jGRHOvV-111" value="Graph &lt;br style=&quot;font-size: 15px;&quot;&gt;Cross-Attention" style="rounded=1;whiteSpace=wrap;html=1;fontSize=15;" vertex="1" parent="1">
@@ -191,7 +191,7 @@
           <mxGeometry x="799.62" y="316.25" width="80" height="30" as="geometry" />
         </mxCell>
         <mxCell id="9q3LpZvZRBrV1jGRHOvV-130" value="Candidate&amp;nbsp;Queries" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=15;" vertex="1" parent="1">
-          <mxGeometry x="985" y="454.25" width="110" height="30" as="geometry" />
+          <mxGeometry x="985" y="450.25" width="110" height="30" as="geometry" />
         </mxCell>
         <mxCell id="9q3LpZvZRBrV1jGRHOvV-137" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.722;entryY=0.023;entryDx=0;entryDy=0;entryPerimeter=0;endArrow=none;endFill=0;fontSize=15;" edge="1" parent="1" source="9q3LpZvZRBrV1jGRHOvV-132" target="9q3LpZvZRBrV1jGRHOvV-136">
           <mxGeometry relative="1" as="geometry" />
