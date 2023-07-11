@@ -15,7 +15,7 @@ config = Config(
     wandb=WandbConfig(
         enabled=True,
         job_type="test",
-        project="yoloclip",
+        project="tests",
         entity="visgator",
         save=False,
     ),

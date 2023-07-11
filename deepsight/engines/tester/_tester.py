@@ -177,8 +177,8 @@ class Tester(Generic[ModelInput, ModelOutput]):
         )
 
         self._logger.info("\tmetrics:")
-        columns = []
-        row = []
+        columns = ["pipeline"]
+        row = [self._pipeline.name]
         for name, metric in metrics.items():
             columns.append(name)
             value = metric.compute()
