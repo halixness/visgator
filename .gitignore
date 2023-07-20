@@ -1,6 +1,3 @@
-# Notebooks
-*.ipynb
-
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -163,20 +160,18 @@ cython_debug/
 #.idea/
 .pdm-python
 
-# VSCode
+
+# Editors
 .vscode
 
-# Weights & Checkpoints
-*.h5
-*.hdf5
-*.pth
-*.pt
-*.ckpt
-*.tar
+# Data
+/data/
 
-# Datasets
-data
+# Other
+/tmp/
+/output/
+projects/**/configs/local*.py
 
-# Others
-tmp
-output
+
+# Weights
+yolov8*.pt
