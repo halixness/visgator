@@ -1,6 +1,7 @@
 # Referring Expression Comprehension as Scene Graph Grounding
 ## Authors
 Diego Calanzone, Francesco Gentile
+
 University of Trento
 Deep Learning course project, Spring 2023
 
